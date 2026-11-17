@@ -1,6 +1,6 @@
 # Soundmine Platform architecture
 
-Status: foundation, Boost tooling, invite-based onboarding and manual license workflows implemented. Plugin activation, signing and payments remain proposals.
+Status: foundation, Boost tooling, invite-based onboarding and manual license workflows implemented. Product-scoped online activation and entitlement APIs are implemented as a preview. JUCE integration, signing and payments remain proposals.
 The starting repository was commit `abc21b0`, containing only `README.md` (`# soundmine_platform`).
 
 ## Application boundaries
@@ -14,7 +14,7 @@ Use a modular monolith: one Laravel application and PostgreSQL database, with ex
 | Orders | Order, OrderItem | Commercial history, status, currency and integer minor-unit amounts. Items snapshot descriptions and prices. Future completion/refund actions coordinate license grants and revocations. No payment integration exists. |
 | Licensing | License, LicenseStatus, LicenseEvent | A customer's grant for one product, optional purchase provenance, validity interval and device allowance. A grant can exist without an order for future trials or manual grants. |
 | Entitlements | Entitlement | Named, structured rights scoped to a license, unique by `(license_id, key)`. Future actions validate feature keys against the product and calculate effective rights. |
-| Activations | Activation, ActivationStatus | Installation allocation per license; unique `(license_id, machine_hash)`. Future activate/deactivate actions enforce device allowance under a license row lock. |
+| Activations | Activation, ActivationStatus, ActivationAuthorization, InstallationToken | Installation allocation per license; unique `(license_id, machine_hash)`. Shared issuance/exchange/read/deactivation actions enforce customer/product scope and device allowance under a license row lock. |
 | OfflineAuthorization | OfflineAuthorizationRequest, LicenseCertificate | Expiring challenge records and immutable signed certificate history. No signer, authorization import/export or certificate issuance exists. |
 
 `app/Models/User.php` is the shared authentication identity. Domain Eloquent models live under their respective `Models` directories. State enums are kept with the owning domain. Framework configuration, migrations and factories keep Laravel's conventional locations.
@@ -30,6 +30,8 @@ erDiagram
     OrderItem o|--o{ License : originates
     License ||--o{ Entitlement : permits
     License ||--o{ Activation : allocates
+    License ||--o{ ActivationAuthorization : authorizes
+    Activation ||--o{ InstallationToken : authenticates
     License ||--o{ OfflineAuthorizationRequest : challenges
     Activation ||--o{ LicenseCertificate : certifies
     OfflineAuthorizationRequest o|--o| LicenseCertificate : fulfills
@@ -40,11 +42,15 @@ Put shared business use-case classes under `app/Domain/<Domain>/Actions`. Contro
 ## Implemented interfaces
 
 - `/admin`: Filament management of customers, invitations, products and licenses. Access requires `users.is_admin` and a verified email. The flag is excluded from mass assignment. There is no default administrator. Customer/product edits are limited; licenses are managed through the shared grant/status actions, with a dedicated history view and no raw editing/deletion.
-- Customer portal: invite-only account creation, session login/logout, verification, password recovery, license list and license details. Queries derive the Customer from the authenticated User and return 404 for other customers’ license IDs. Login and recovery are throttled; password resets invalidate existing protected sessions. Verification and session middleware persist on Livewire updates. Public self-registration and admin MFA are not implemented.
-- `GET /api/v1/status`: throttled, versioned service status; explicitly reports licensing unavailable.
+- Customer portal: invite-only account creation, session login/logout, verification, password recovery, license list, license details and installation authorization codes. Queries derive the Customer from the authenticated User and return 404 for other customers’ license IDs. Login and recovery are throttled; password resets invalidate existing protected sessions. Verification and session middleware persist on Livewire updates. Public self-registration and admin MFA are not implemented.
+- `GET /api/v1/status`: throttled, versioned service status; reports the online activation preview separately from unavailable signed/offline licensing.
 - `/up`: Laravel health route. It is an application liveness signal, not a full dependency readiness check.
 
-There are no plugin activation, entitlement mutation, order, checkout or certificate endpoints. All proposed endpoints below remain unregistered.
+- `POST /api/v1/products/{product:slug}/activations`: exchange a customer-issued, installation-bound authorization code with an idempotency header.
+- `GET /api/v1/products/{product:slug}/entitlements`: current rights for one installation bearer credential.
+- `DELETE /api/v1/products/{product:slug}/activations/{activation}`: release only that credential's installation.
+
+There are no entitlement mutation, order, checkout, signing or certificate endpoints. The [activation API contract](activation-api.md) documents the implemented protocol and its limits.
 
 ## Persistence decisions
 
@@ -52,17 +58,19 @@ Domain records use UUIDs; framework User IDs remain conventional big integers. U
 
 Foreign keys restrict destructive deletion of customer/commercial/licensing history. Product availability is an explicit flag; the seed creates Rhythm Conductor inactive. License state defaults to pending. The schema enforces unique per-license entitlements and installations, unique offline request digests, positive quantities/device limits and ordered validity dates. One offline request can link to at most one certificate. Certificate storage requires payload, signature, key identifier and validity dates, but does not verify signatures at this phase.
 
-The schema is not a licensing enforcement engine. Future actions must enforce matching customer/product provenance for an order-linked license, matching license/machine for an offline certificate, valid status transitions, sums/currencies, expiry, supported product entitlements and activation counts. The admin UI writes manual grants and status transitions through `GrantManualLicense` and `ChangeLicenseStatus`, with PostgreSQL row locks and transactional audit insertion. It does not create purchase-linked grants, activations or certificates. Add cross-record constraints where useful as those workflows are implemented. A persisted `active` status alone must never be treated as sufficient authorization.
+The schema is not a licensing enforcement engine. Future actions must enforce matching customer/product provenance for an order-linked license, matching license/machine for an offline certificate, valid status transitions, sums/currencies, expiry, supported product entitlements and activation counts. The admin UI writes manual grants and status transitions through `GrantManualLicense` and `ChangeLicenseStatus`, with PostgreSQL row locks and transactional audit insertion. It does not create purchase-linked grants or certificates. Activation actions separately enforce current verified ownership, product availability, license status/dates, token validity and per-license active allocation counts. Add cross-record constraints where useful as those workflows are implemented. A persisted `active` status alone must never be treated as sufficient authorization.
 
-## Proposed online protocol (later phase)
+## Online activation boundaries
 
-1. Authenticate the customer or redeem a short-lived installation authorization. A public product ID, license UUID or machine hash is never sufficient authorization. Do not embed a reusable server secret in the plugin.
-2. `POST /api/v1/activations`: validate the product, grant, status, time interval and normalized installation fingerprint. Lock the license row and allocate or reuse the installation atomically. Design idempotency and retry semantics before enabling this endpoint.
-3. `GET /api/v1/entitlements`: authorize the caller and calculate effective rights through the same domain service used for certificates.
-4. `DELETE /api/v1/activations/{id}`: authorize ownership and release the allocation according to the eventual device policy. Preserve the record for audit and retry handling.
-5. Renewal returns a short-lived signed entitlement certificate. Apply request limits, input bounds, structured error codes and privacy-safe audit events. Test concurrent activations and cross-customer access against PostgreSQL before exposing writes.
+The customer portal issues a ten-minute authorization bound to the selected license, customer, product, installation hash and platform. The exchange request cannot choose its customer or license. Installation tokens snapshot customer/product ownership and authenticate exactly one activation; reassignment does not let an old token follow the license. UUIDs, slugs, hashes and account sessions never substitute for installation authentication.
 
-Raw machine identifiers should not be stored; use a versioned, privacy-reviewed fingerprint scheme and digest. Hashing is not authentication and does not guarantee anonymity. Decide normalization, hardware-change tolerance and reinstall behavior with the JUCE client team.
+All activation mutations and entitlement reads lock the license row first, then the relevant grant/token/activation. This serializes quota checks, retries, credential rotation and administrative license status changes. Separate PHP processes test final-seat contention, duplicate requests and concurrent products against PostgreSQL. Product availability and customer verification are read anew for online rights; their changes take effect on subsequent requests. They are not serialized by the license lock.
+
+Idempotency is scoped to one short-lived authorization code. An exact retry with the same UUID header and normalized payload retrieves the same live credential, while different input is rejected. The credential is digested in `installation_tokens`; a temporary encrypted copy on the authorization permits recovery after a lost response. Expired authorizations are unusable immediately and pruned hourly. License expiry, suspension, revocation, token rotation and deactivation also prevent stale replay. Rights are recalculated instead of replaying a cached entitlement response.
+
+The installation identifier is a persisted random client UUID, hashed with a version prefix. It represents an installation, not verified hardware; copying both its state and bearer token can impersonate that installation. No device attestation or hardware tolerance is promised. Products have independent licenses, quotas, tokens and entitlement key namespaces. Future edition/release definitions should remain catalog data rather than product-specific branches in these actions.
+
+This preview returns online JSON rights, with no signed certificate or offline grant. Token renewal currently requires another portal authorization; customer device recovery and JUCE interoperability fixtures remain follow-up work.
 
 ## Proposed Ed25519 and offline authorization (later phase)
 
@@ -85,7 +93,7 @@ Offline revocation cannot be instantaneous. Decide maximum offline lifetime, ren
 
 1. **Implemented:** framework, schema, relationships, PostgreSQL tests, Boost tooling and documentation.
 2. **Implemented:** invite-based customer onboarding/recovery, verified portal access, management policies/resources and audited manual grants/status transitions.
-3. Activation/entitlement actions and authenticated REST API, race/idempotency tests, protocol contract and JUCE interoperability tests.
+3. **Implemented:** product-scoped activation/entitlement actions and authenticated REST API, PostgreSQL race/idempotency tests and protocol contract. **Next:** JUCE client integration, cross-language fixtures, device recovery and renewal UX.
 4. Managed Ed25519 signing, key rotation, offline challenges/import/export, shared verification vectors and operational review.
 5. Stripe checkout/webhooks and refund handling through Orders actions, with idempotent fulfillment and reconciliation.
 
