@@ -4,7 +4,7 @@ Commercial customer and licensing platform for Soundmine audio products. The fir
 
 This is a **foundation**, with no payments, plugin activation, certificate issuance or production signing. No production credentials are included. Nothing has been deployed.
 
-The repository originally contained only a one-line README at `abc21b0`. Work is isolated on `feature/laravel-foundation` for review before merging into `main`.
+The repository originally contained only a one-line README at `abc21b0`. The foundation and Boost tooling are merged; the next phase adds invite-based customer onboarding and audited manual license management.
 
 ## Stack and structure
 
@@ -45,7 +45,7 @@ npm run build
 docker compose up -d app
 ```
 
-Open <http://localhost:8000>. `/portal` requires sign-in; `/admin` has its own Filament sign-in. There is no registration or default user. The product seed is idempotent and creates only the inactive Rhythm Conductor entry. No licenses, orders, keys or administrators are seeded.
+Open <http://localhost:8000>. `/portal` requires sign-in; `/admin` has its own Filament sign-in. There is no public self-registration or default user. Administrators invite customers through Filament. The product seed is idempotent and creates only the inactive Rhythm Conductor entry. No licenses, orders, keys or administrators are seeded. Manual license grants require an administrator after setup.
 
 `.env` is ignored. The example PostgreSQL password is intentionally for local development only. The generated `APP_KEY` is a local Laravel encryption/session key; it is not an Ed25519 signing key. Keep all real secrets out of source control.
 
@@ -60,6 +60,21 @@ docker compose exec db psql -U soundmine -d soundmine -c 'CREATE DATABASE soundm
 On Linux, if Docker-created files need to use your host ownership, run one-off app commands with `--user "$(id -u):$(id -g)"` and a writable `COMPOSER_HOME`, as appropriate for your Docker configuration. In managed environments with an intercepting HTTPS proxy, mount the environment CA as a temporary build secret/use the environment's prescribed CA configuration; keep certificate verification enabled. Do not commit environment trust material.
 
 For a host PHP installation, use PHP 8.5+ with Laravel's standard extensions plus `intl`, `pdo_pgsql` and `sodium`, run `composer install`, and set `DB_HOST=127.0.0.1` in your ignored `.env`. Use the same separate PostgreSQL test database. Set test database host/credentials through environment variables if they differ from the Compose defaults.
+
+## Customer and manual license workflows
+
+1. Bootstrap a local administrator using the Tinker instructions above, explicitly assigning `is_admin`. Complete email verification using the link in the local mail log. No administrator is created by a migration or seed.
+2. In `/admin/customers`, select **Invite customer**. Pending and accepted invitations are listed under **Customer invitations**. Reissuing a pending invitation invalidates its previous link and starts a new 48-hour validity period.
+3. The invited person chooses a password of at least 12 characters. The email/name come from the invitation; account creation never accepts an administrator flag. Invitations are single-use and stored with a SHA-256 token digest, not the token itself. Email verification is required before portal license access.
+4. Mark a product active before granting a license. In **Licenses**, choose **Grant license**, select a customer/product, set validity and device allowance, optionally enter entitlement key/value strings, and provide a reason. No order or payment is created.
+5. Administrators can suspend an active license, resume a suspended license, or revoke a pending/active/suspended license. Revocation is terminal; correcting a revoked grant requires a new grant. Every operation requires a reason and records the administrator, time, state transition and grant snapshot. Review history on the license's detail page. Raw editing/deletion of licenses is not offered.
+6. Verified customers use `/portal` and its license-detail links to view their own products, dates, device allowances and entitlements. Administrator audit reasons and other customers' records are not exposed. Password recovery is available from sign-in; valid reset links expire after 60 minutes and are single-use. Resetting a password rotates the remember token and invalidates existing portal sessions on their next protected request.
+
+Mail uses Laravel's configured notification channels. The development default is `MAIL_MAILER=log`: invitation, verification and recovery emails appear in `storage/logs/laravel.log`. No external messages are sent during automated tests. Configure and verify a real mail provider separately before using these flows outside development; no mail credentials are supplied here. Notification delivery is synchronous and occurs after each business transaction. An administrator can reissue an invitation if delivery fails, and customers can request another verification/reset link. Treat local mail logs as sensitive because they contain temporary authorization links.
+
+The new migration normalizes existing user emails and adds a case-insensitive unique index. Existing case/whitespace-equivalent duplicate accounts must be reconciled before applying it. Rollback drops invitation and audit tables and cannot restore original email casing; use a forward fix once these records contain real history.
+
+License history is append-only through the application's model and has no edit/delete UI. It is not a tamper-proof ledger against privileged database access. Invitation acceptance and license changes use PostgreSQL row locks; license updates and audit insertion commit or roll back together. Manual entitlement values are strings in this phase; the existing JSONB storage can still display older structured values. The status API continues to report plugin licensing unavailable.
 
 ## Laravel Boost development tooling
 
@@ -96,12 +111,12 @@ npm run build
 
 Tests use PostgreSQL, not SQLite, to exercise JSONB, foreign keys, uniqueness and CHECK constraints. `phpunit.xml` selects `soundmine_test`; **never point tests at a database containing real data**. Environment overrides can supply a different isolated test database. No signing credentials or Stripe account are needed.
 
-Tests cover multi-product ownership, purchase snapshots, entitlement and installation uniqueness, offline request digest uniqueness, certificate relationships, invalid amounts/dates, deletion protection, seed repeatability, customer isolation, restricted administration, session login/logout, throttling and absent licensing mutation routes. Certificate fixtures are inert strings, not signed licenses.
+Tests cover multi-product ownership, persistence constraints, invitation acceptance/reissue/expiry, verification, password recovery and session invalidation, customer isolation, administrative policies, Filament actions, license transitions and audit-failure rollback. Plugin licensing mutation routes remain absent. Certificate fixtures are inert strings, not signed licenses.
 
 GitHub Actions runs dependency validation, formatting, PostgreSQL tests and the frontend build on pushes and pull requests. It has no deployment steps or production secrets.
 
 ## Current limits
 
-The admin panel has a dashboard only; business management resources remain future work. The portal supports basic sign-in and a read-only license list; account invitations, recovery and verification are not implemented. Domain models and migrations establish storage, not a production licensing engine. No cross-record issuance actions, activation limits enforcement, real signing or offline authorization workflows exist yet. See the architecture document for the next phases.
+Administrators can invite customers, edit customer display names, manage product availability, and grant/suspend/resume/revoke license records. Customers can accept invitations, verify their email, recover passwords and view their own license details. These records do not activate software. Plugin authentication, device-limit enforcement, Ed25519 signing, offline authorization, payments and deployment remain future phases. Administrator MFA and a full production operational review are not included.
 
 Stop local services with `docker compose down`; this retains PostgreSQL data. Review the feature branch diff before merging. No merge or deployment is part of this work.

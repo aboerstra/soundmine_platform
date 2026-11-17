@@ -1,5 +1,7 @@
 <section>
     <h1>Sign in to Soundmine</h1>
+    @if (session('status')) <p role="status">{{ session('status') }}</p> @endif
+    <p><a href="{{ route('password.request') }}">Forgot your password?</a></p>
     <form wire:submit="login">
         <label for="email">Email</label>
         <input id="email" type="email" wire:model="email" autocomplete="username" required>

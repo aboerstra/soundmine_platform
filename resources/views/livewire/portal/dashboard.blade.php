@@ -3,7 +3,7 @@
     <p>License activation and offline authorization are not available yet.</p>
     <ul>
         @forelse ($licenses as $license)
-            <li wire:key="{{ $license->id }}">{{ $license->product->name }} — {{ $license->status->value }}</li>
+            <li wire:key="{{ $license->id }}"><a href="{{ route('portal.licenses.show', $license) }}">{{ $license->product->name }}</a> — {{ $license->status->value }}</li>
         @empty
             <li>No licenses are linked to your account.</li>
         @endforelse
