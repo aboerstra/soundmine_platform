@@ -15,5 +15,21 @@
         @empty <li>No entitlements recorded.</li>
         @endforelse
     </ul>
-    <p>This record does not activate the plugin. Activation and offline authorization are not available yet.</p>
+    <h2>Authorize an installation</h2>
+    <p>Paste the installation fingerprint from your Soundmine application. This authorizes only {{ $license->product->name }} under this license.</p>
+    <form wire:submit="issueAuthorization">
+        <label for="machineHash">Installation fingerprint (64 lowercase hexadecimal characters)</label>
+        <input id="machineHash" wire:model="machineHash" type="text" minlength="64" maxlength="64" required autocomplete="off">
+        @error('machine_hash') <p role="alert">{{ $message }}</p> @enderror
+        <label for="platform">Platform</label>
+        <select id="platform" wire:model="platform"><option value="macos">macOS</option><option value="windows">Windows</option></select>
+        @error('platform') <p role="alert">{{ $message }}</p> @enderror
+        @error('authorization') <p role="alert">{{ $message }}</p> @enderror
+        <button type="submit" wire:loading.attr="disabled">Generate authorization code</button>
+    </form>
+    @if ($authorizationCode)
+        <p>Copy this code into your application. It expires at {{ $authorizationExpiresAt }} and authorizes one exchange.</p>
+        <code>{{ $authorizationCode }}</code>
+    @endif
+    <p>Online activation is a preview API. Signed certificates and offline authorization are not available yet.</p>
 </section>

@@ -2,9 +2,9 @@
 
 Commercial customer and licensing platform for Soundmine audio products. The first product is **Rhythm Conductor**, a JUCE VST3 plugin for macOS and Windows. The architecture supports multiple products from the start.
 
-This is a **foundation**, with no payments, plugin activation, certificate issuance or production signing. No production credentials are included. Nothing has been deployed.
+This is an **online activation preview**, with no payments, certificate issuance or production signing. No production credentials are included. Nothing has been deployed.
 
-The repository originally contained only a one-line README at `abc21b0`. The foundation and Boost tooling are merged; the next phase adds invite-based customer onboarding and audited manual license management.
+The repository originally contained only a one-line README at `abc21b0`. The foundation, Boost tooling, invite-based customer onboarding and audited manual license management are merged. This phase adds product-scoped online activation and entitlement APIs.
 
 ## Stack and structure
 
@@ -20,14 +20,14 @@ app/Domain/
   Orders/                  Orders and purchase snapshots
   Licensing/               Product license grants and state
   Entitlements/            Per-license rights
-  Activations/             Installation allocation records
+  Activations/             Installation allocation, authorization codes and scoped credentials
   OfflineAuthorization/    Challenge and certificate records
-app/Livewire/Portal/        Customer sign-in and read-only license view
+app/Livewire/Portal/        Customer sign-in, licenses and installation authorization
 app/Providers/Filament/     Restricted administration shell
-routes/api.php             Versioned status API only
+routes/api.php             Versioned status and product-scoped activation API
 ```
 
-See [architecture and phased implementation](docs/architecture.md) for the entity diagram, boundaries, proposed activation API, Ed25519 certificate design and offline flow. Proposed workflows are clearly distinguished from implemented code.
+See [architecture and phased implementation](docs/architecture.md) for the entity diagram, boundaries, online activation boundaries, proposed Ed25519 certificate design and offline flow. See the [activation API contract](docs/activation-api.md) for client integration. Proposed workflows are clearly distinguished from implemented code.
 
 ## Local setup with Docker
 
@@ -74,7 +74,23 @@ Mail uses Laravel's configured notification channels. The development default is
 
 The new migration normalizes existing user emails and adds a case-insensitive unique index. Existing case/whitespace-equivalent duplicate accounts must be reconciled before applying it. Rollback drops invitation and audit tables and cannot restore original email casing; use a forward fix once these records contain real history.
 
-License history is append-only through the application's model and has no edit/delete UI. It is not a tamper-proof ledger against privileged database access. Invitation acceptance and license changes use PostgreSQL row locks; license updates and audit insertion commit or roll back together. Manual entitlement values are strings in this phase; the existing JSONB storage can still display older structured values. The status API continues to report plugin licensing unavailable.
+License history is append-only through the application's model and has no edit/delete UI. It is not a tamper-proof ledger against privileged database access. Invitation acceptance and license changes use PostgreSQL row locks; license updates and audit insertion commit or roll back together. Manual entitlement values are strings in this phase; the existing JSONB storage can still display older structured values. The status API reports online activation separately from signed licensing, which remains unavailable.
+
+## Online activation preview
+
+A verified customer opens their license details, enters the plugin's installation hash and platform, and generates a ten-minute authorization code. The plugin exchanges this code at the product-specific activation endpoint using an `Idempotency-Key` UUID header. The response supplies a scoped installation bearer token, current entitlements and the allocated activation ID. Read rights or release that allocation using the same product's routes. No reusable server secret belongs in a plugin.
+
+Products share the implementation, while each license keeps its own allowance and entitlements. The same installation hash can activate multiple products independently. Product display names can change; stable slugs and UUIDs identify products. Turning product availability off also denies existing installations online entitlement access.
+
+Tokens expire after 30 days, capped by license expiry. A fresh portal authorization rotates the credential without consuming another seat. Exact exchange retries return the same credential during the authorization's remaining validity; current license state is rechecked. PostgreSQL license row locks serialize seat allocation with license status changes. Codes and tokens are digested at rest; the retry credential is temporarily encrypted using Laravel's `APP_KEY` and excluded from model serialization.
+
+Set `SOUNDMINE_ONLINE_ACTIVATION_ENABLED=false` to disable this preview. Configure Laravel's scheduler to run `php artisan schedule:run` each minute when operating the application; the registered hourly pruning task removes expired authorization rows and their encrypted retry credentials. For local cleanup:
+
+```sh
+docker compose run --rm app php artisan model:prune --model='App\Domain\Activations\Models\ActivationAuthorization'
+```
+
+Expired tokens do not automatically release seats. A valid credential can release its own allocation; renewing the same installation uses a new portal code. Lost-device recovery and customer device-management UI are future work. The [API contract](docs/activation-api.md) specifies installation identity, retry behavior, errors and client storage expectations. JUCE integration, signed certificates and offline use are still unimplemented.
 
 ## Laravel Boost development tooling
 
@@ -111,12 +127,12 @@ npm run build
 
 Tests use PostgreSQL, not SQLite, to exercise JSONB, foreign keys, uniqueness and CHECK constraints. `phpunit.xml` selects `soundmine_test`; **never point tests at a database containing real data**. Environment overrides can supply a different isolated test database. No signing credentials or Stripe account are needed.
 
-Tests cover multi-product ownership, persistence constraints, invitation acceptance/reissue/expiry, verification, password recovery and session invalidation, customer isolation, administrative policies, Filament actions, license transitions and audit-failure rollback. Plugin licensing mutation routes remain absent. Certificate fixtures are inert strings, not signed licenses.
+Tests cover multi-product ownership, persistence constraints, invitation acceptance/reissue/expiry, verification, password recovery and session invalidation, customer isolation, administrative policies, Filament actions, license transitions and audit-failure rollback. Activation tests cover scoped credentials, validity, quota enforcement, retries, rotation, pruning and separate-process PostgreSQL races. Certificate fixtures are inert strings, not signed licenses.
 
 GitHub Actions runs dependency validation, formatting, PostgreSQL tests and the frontend build on pushes and pull requests. It has no deployment steps or production secrets.
 
 ## Current limits
 
-Administrators can invite customers, edit customer display names, manage product availability, and grant/suspend/resume/revoke license records. Customers can accept invitations, verify their email, recover passwords and view their own license details. These records do not activate software. Plugin authentication, device-limit enforcement, Ed25519 signing, offline authorization, payments and deployment remain future phases. Administrator MFA and a full production operational review are not included.
+Administrators can invite customers, edit customer display names, manage product availability, and grant/suspend/resume/revoke license records. Customers can accept invitations, verify their email, recover passwords and view their own license details. Verified customers can authorize installations; product-scoped REST endpoints enforce online rights and device limits. Actual JUCE integration, Ed25519 signing, offline authorization, payments and deployment remain future phases. Administrator MFA and a full production operational review are not included.
 
 Stop local services with `docker compose down`; this retains PostgreSQL data. Review the feature branch diff before merging. No merge or deployment is part of this work.

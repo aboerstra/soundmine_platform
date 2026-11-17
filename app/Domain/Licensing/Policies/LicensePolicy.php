@@ -22,6 +22,11 @@ class LicensePolicy
         return $user->is_admin === true || $record->customer()->where('user_id', $user->id)->exists();
     }
 
+    public function authorizeInstallation(User $user, License $record): bool
+    {
+        return $user->hasVerifiedEmail() && $record->customer()->where('user_id', $user->id)->exists();
+    }
+
     public function update(User $user, License $record): bool
     {
         return false;

@@ -5,7 +5,7 @@
     <main>
         <h1>Soundmine Platform</h1>
         <p>Customer and licensing platform foundation.</p>
-        <p>Purchases, activation, and offline authorization are not available yet.</p>
+        <p>Online activation is available as a preview API. Purchases, signed certificates, and offline authorization are not available yet.</p>
         <a href="{{ route('portal') }}">Customer portal</a>
     </main>
 </body>
