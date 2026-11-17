@@ -5,6 +5,7 @@ namespace App\Livewire\Portal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -16,6 +17,7 @@ class Login extends Component
 
     public function login(): void
     {
+        $this->email = Str::lower(trim($this->email));
         $this->validate(['email' => 'required|email|max:255', 'password' => 'required|string|max:1024']);
         $key = 'portal-login:'.hash('sha256', mb_strtolower($this->email).'|'.request()->ip());
         if (RateLimiter::tooManyAttempts($key, 5)) {
@@ -28,6 +30,7 @@ class Login extends Component
         }
         RateLimiter::clear($key);
         session()->regenerate();
+        session()->put('password_hash_web', Auth::guard()->hashPasswordForCookie(Auth::user()->getAuthPassword()));
         $this->reset('password');
         $this->redirectIntended(route('portal'));
     }

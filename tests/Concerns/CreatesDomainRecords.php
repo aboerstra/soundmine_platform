@@ -10,6 +10,11 @@ use Illuminate\Support\Str;
 
 trait CreatesDomainRecords
 {
+    protected function administrator(): User
+    {
+        return User::factory()->create(['is_admin' => true]);
+    }
+
     protected function customer(?User $user = null): Customer
     {
         return Customer::create(['user_id' => ($user ?? User::factory()->create())->id, 'display_name' => 'Test customer']);

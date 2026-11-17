@@ -55,6 +55,11 @@ class License extends Model
         return $this->hasMany(Activation::class);
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(LicenseEvent::class)->orderBy('created_at')->orderBy('id');
+    }
+
     public function offlineRequests(): HasMany
     {
         return $this->hasMany(OfflineAuthorizationRequest::class, 'license_id');

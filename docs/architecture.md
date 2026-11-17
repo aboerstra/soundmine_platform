@@ -1,6 +1,6 @@
 # Soundmine Platform architecture
 
-Status: foundation implemented; transaction workflows and plugin protocol below are proposals.
+Status: foundation, Boost tooling, invite-based onboarding and manual license workflows implemented. Plugin activation, signing and payments remain proposals.
 The starting repository was commit `abc21b0`, containing only `README.md` (`# soundmine_platform`).
 
 ## Application boundaries
@@ -9,10 +9,10 @@ Use a modular monolith: one Laravel application and PostgreSQL database, with ex
 
 | Domain | Current records | Responsibility and future application actions |
 | --- | --- | --- |
-| Customers | Customer, linked one-to-one to User | Customer identity and ownership. User owns authentication; Customer owns commercial relationships. Organization memberships can be added separately. |
+| Customers | Customer linked one-to-one to User; CustomerInvitation | Customer identity and ownership. User owns authentication; Customer owns commercial relationships. Organization memberships can be added separately. |
 | Catalog | Product | Stable product slug and UUID, display metadata, availability. Rhythm Conductor is a catalog entry, never a special case in license code. Add product releases and editions when requirements settle. |
 | Orders | Order, OrderItem | Commercial history, status, currency and integer minor-unit amounts. Items snapshot descriptions and prices. Future completion/refund actions coordinate license grants and revocations. No payment integration exists. |
-| Licensing | License, LicenseStatus | A customer's grant for one product, optional purchase provenance, validity interval and device allowance. A grant can exist without an order for future trials or manual grants. |
+| Licensing | License, LicenseStatus, LicenseEvent | A customer's grant for one product, optional purchase provenance, validity interval and device allowance. A grant can exist without an order for future trials or manual grants. |
 | Entitlements | Entitlement | Named, structured rights scoped to a license, unique by `(license_id, key)`. Future actions validate feature keys against the product and calculate effective rights. |
 | Activations | Activation, ActivationStatus | Installation allocation per license; unique `(license_id, machine_hash)`. Future activate/deactivate actions enforce device allowance under a license row lock. |
 | OfflineAuthorization | OfflineAuthorizationRequest, LicenseCertificate | Expiring challenge records and immutable signed certificate history. No signer, authorization import/export or certificate issuance exists. |
@@ -35,12 +35,12 @@ erDiagram
     OfflineAuthorizationRequest o|--o| LicenseCertificate : fulfills
 ```
 
-For future workflows, put use-case classes under `app/Domain/<Domain>/Actions`. Controllers, Livewire components, Filament resources and queued jobs should call those same actions. Keep state changes and business validation out of UI classes. Use policies for access control, request/DTO validation at boundaries, and database transactions for multi-record operations. Add interfaces for actual external boundaries (signing, payments), rather than wrapping every Eloquent query in a repository.
+Put shared business use-case classes under `app/Domain/<Domain>/Actions`. Controllers, Livewire components, Filament resources and queued jobs should call those same actions. Keep state changes and business validation out of UI classes. Use policies for access control, request/DTO validation at boundaries, and database transactions for multi-record operations. Add interfaces for actual external boundaries (signing, payments), rather than wrapping every Eloquent query in a repository.
 
 ## Implemented interfaces
 
-- `/admin`: Filament panel with login and dashboard. Access requires an explicitly set `users.is_admin` flag in every environment. The flag is excluded from mass assignment. No default administrator or management resources are created.
-- `/login`, `/portal`, `POST /logout`: basic Livewire session authentication and read-only license list. Queries derive the Customer from the authenticated User; no customer ID is accepted from the browser. Login has generic failure messages, throttling and session regeneration. Registration, password recovery, email verification, admin MFA and an account invitation workflow are future work.
+- `/admin`: Filament management of customers, invitations, products and licenses. Access requires `users.is_admin` and a verified email. The flag is excluded from mass assignment. There is no default administrator. Customer/product edits are limited; licenses are managed through the shared grant/status actions, with a dedicated history view and no raw editing/deletion.
+- Customer portal: invite-only account creation, session login/logout, verification, password recovery, license list and license details. Queries derive the Customer from the authenticated User and return 404 for other customers’ license IDs. Login and recovery are throttled; password resets invalidate existing protected sessions. Verification and session middleware persist on Livewire updates. Public self-registration and admin MFA are not implemented.
 - `GET /api/v1/status`: throttled, versioned service status; explicitly reports licensing unavailable.
 - `/up`: Laravel health route. It is an application liveness signal, not a full dependency readiness check.
 
@@ -52,7 +52,7 @@ Domain records use UUIDs; framework User IDs remain conventional big integers. U
 
 Foreign keys restrict destructive deletion of customer/commercial/licensing history. Product availability is an explicit flag; the seed creates Rhythm Conductor inactive. License state defaults to pending. The schema enforces unique per-license entitlements and installations, unique offline request digests, positive quantities/device limits and ordered validity dates. One offline request can link to at most one certificate. Certificate storage requires payload, signature, key identifier and validity dates, but does not verify signatures at this phase.
 
-The schema is not a licensing enforcement engine. Future actions must enforce matching customer/product provenance for an order-linked license, matching license/machine for an offline certificate, valid status transitions, sums/currencies, expiry, supported product entitlements and activation counts. No current UI/API writes these records. Add cross-record constraints where useful as those workflows are implemented. A persisted `active` status alone must never be treated as sufficient authorization.
+The schema is not a licensing enforcement engine. Future actions must enforce matching customer/product provenance for an order-linked license, matching license/machine for an offline certificate, valid status transitions, sums/currencies, expiry, supported product entitlements and activation counts. The admin UI writes manual grants and status transitions through `GrantManualLicense` and `ChangeLicenseStatus`, with PostgreSQL row locks and transactional audit insertion. It does not create purchase-linked grants, activations or certificates. Add cross-record constraints where useful as those workflows are implemented. A persisted `active` status alone must never be treated as sufficient authorization.
 
 ## Proposed online protocol (later phase)
 
@@ -83,8 +83,8 @@ Offline revocation cannot be instantaneous. Decide maximum offline lifetime, ren
 
 ## Delivery phases
 
-1. **This branch:** framework, schema, relationships, guarded interface shells, PostgreSQL tests, local tooling and documentation.
-2. Customer onboarding/recovery, verified ownership policies, admin management resources and auditable manual grants.
+1. **Implemented:** framework, schema, relationships, PostgreSQL tests, Boost tooling and documentation.
+2. **Implemented:** invite-based customer onboarding/recovery, verified portal access, management policies/resources and audited manual grants/status transitions.
 3. Activation/entitlement actions and authenticated REST API, race/idempotency tests, protocol contract and JUCE interoperability tests.
 4. Managed Ed25519 signing, key rotation, offline challenges/import/export, shared verification vectors and operational review.
 5. Stripe checkout/webhooks and refund handling through Orders actions, with idempotent fulfillment and reconciliation.
