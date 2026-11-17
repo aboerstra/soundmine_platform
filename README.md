@@ -61,6 +61,29 @@ On Linux, if Docker-created files need to use your host ownership, run one-off a
 
 For a host PHP installation, use PHP 8.5+ with Laravel's standard extensions plus `intl`, `pdo_pgsql` and `sodium`, run `composer install`, and set `DB_HOST=127.0.0.1` in your ignored `.env`. Use the same separate PostgreSQL test database. Set test database host/credentials through environment variables if they differ from the Compose defaults.
 
+## Laravel Boost development tooling
+
+Laravel Boost 2 is installed in `require-dev`. Its generated `AGENTS.md` and five Codex skills under `.agents/skills` provide Laravel, Livewire, Tailwind and testing guidance. Our durable project conventions live in `.ai/guidelines/soundmine.md`; edit that source rather than the generated Boost block. `boost.json` records the selected agent/features. Laravel Cloud, Sail and Nightwatch integrations are disabled.
+
+The generated `.codex/config.toml` starts the stdio MCP server through `bin/boost-php`. This launcher uses PHP when available (including tool subprocesses inside the container), otherwise runs PHP in the existing Docker Compose app runtime. Docker must be available; complete local setup and migrations first. With host PHP, set database networking as described above.
+
+Some Codex clients require project trust or explicit MCP registration before loading project configuration. If Boost is absent from `codex mcp list`, run this from the project root in your own writable Codex configuration:
+
+```sh
+codex mcp add laravel-boost -- "$(pwd)/bin/boost-php" artisan boost:mcp
+codex mcp list
+```
+
+Restart the coding-agent session after registering the server. Managed sessions may not permit global configuration changes or dynamically attaching new MCP servers; repository configuration alone does not guarantee that the current session exposes Boost tools. In this cloud environment, we verified the Docker launcher directly with MCP initialization, tool discovery, PostgreSQL schema inspection and version-specific documentation search; automatic discovery in the already-running agent session was not available.
+
+To regenerate guidance and skills after dependency updates:
+
+```sh
+docker compose run --rm app php artisan boost:update --no-discover --no-interaction
+```
+
+Review regenerated files before committing them. Only the portable MCP configuration is tracked under `.codex`; other local Codex state remains ignored. Boost is enabled only with `APP_ENV=local` and can be turned off using `BOOST_ENABLED=false`. Browser-log injection is disabled. Production installs should use `composer install --no-dev`; Boost remains disabled outside local development even if dev packages are accidentally present. This adds no public MCP HTTP endpoint, production credential or licensing functionality.
+
 ## Validation
 
 ```sh

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Run Boost's PHP commands through the project's development runtime.
+set -eu
+cd "$(dirname "$0")/.."
+if command -v php >/dev/null 2>&1; then
+    exec php "$@"
+fi
+exec docker compose run --rm -T app php "$@"
