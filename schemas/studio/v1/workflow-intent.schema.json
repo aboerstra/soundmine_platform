@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.soundmine.com/studio/v1/workflow-intent.schema.json",
+  "title": "Soundmine workflow intent v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "id",
+    "name",
+    "roles",
+    "goals",
+    "constraints"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "workflow.intent"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "roles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "goals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preserveDirectCvGate": {
+          "type": "boolean"
+        },
+        "preserveHardwareVelocityCv": {
+          "type": "boolean"
+        },
+        "allowAdditionalHardware": {
+          "type": "boolean"
+        },
+        "requirePerNoteHarmonicAdaptation": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
