@@ -54,11 +54,14 @@ Expected validation outcomes:
 - Root transposition via external BSP commands remains unverified until bench-tested and must not be advertised as working.
 - The system can show alternative execution plans without silently substituting MIDI-to-CV for the user's direct hardware gate path.
 
-## Standalone pattern orchestration
+## Pattern orchestration in Ableton and standalone
 
-A musician can use the standalone Rhythm Conductor desktop app to cue a sequence of patterns in a studio with no DAW. The desktop runtime connects to the studio's MIDI devices, follows the selected clock, and schedules each pattern change. Hardware can keep its own patterns, sequencing, sound generation, and clock. Ableton or another DAW can participate when present.
+Rhythm Conductor has two ways to run:
 
-An optional mobile companion can request a scene change and display which scene the desktop has queued or activated. The desktop determines the launch boundary and continues managing playback if the mobile connection drops. The desktop app can cue scenes on its own.
+- **Inside Ableton Live.** The Max for Live integration runs in the Live set and uses Live's transport and configured MIDI routing to schedule pattern changes. This mode runs entirely within Live.
+- **Standalone.** The desktop app runs the workflow in a studio without a DAW. It connects to the studio's MIDI devices, follows the selected clock, and schedules each pattern change. An optional mobile companion can request a scene change and display what the desktop has queued or activated. The desktop determines the launch boundary and continues managing playback if the mobile connection drops.
+
+In either mode, hardware can keep its own patterns, sequencing, and sound generation.
 
 A scene identifies a pattern target separately for each device. One scene could cue Analog Rytm pattern B1, BeatStep Pro pattern A4, and a separately selected SL61 MkIII pattern, with all three intended to start at the next bar. Pattern identifiers belong to each device. Hardware continues to play and repeat its own patterns between scene changes.
 
