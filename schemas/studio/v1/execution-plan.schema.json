@@ -57,6 +57,28 @@
           }
         }
       }
+    },
+    "assignments": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "retainedConnections": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "eventGraph": {
+      "$ref": "workflow-intent.schema.json#/properties/eventGraph"
     }
   }
 }

@@ -22,3 +22,8 @@ JSON Schema checks document structure. The Python validator also checks selected
 The example uses the user's declared BeatStep Pro pitch CV and gate connections to the Behringer 2600. It intentionally returns a conditional plan for per-note chord adaptation: the direct analog pitch path has no verified mechanism for per-step software retuning. This fixture must not be interpreted as proof of the hardware's externally controllable sequencing features.
 
 See `docs/studio-workflow-foundation.md` for the intended architecture and implementation sequence.
+
+
+The draft 1.0 intent accepts optional `requirements` and `eventGraph` fields. A capability requirement names a bound role, capability ID, hard or soft priority, and evidence threshold. Event graphs use typed input/output ports and point-to-point routes. Fan-in on harmony and control inputs requires an explicit merge policy. Note and clock fan-in requires ownership semantics beyond this draft.
+
+A generated execution plan can include `assignments`, `retainedConnections`, and `eventGraph`. Original 1.0 documents remain readable. Older strict validators need the updated schemas to accept documents containing these new fields. The native planner evaluates the supplied inventory and treats generated plans as proposals.

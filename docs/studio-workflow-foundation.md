@@ -1,6 +1,6 @@
 # Soundmine Studio and Workflow Foundation — Architecture Contract v0.1
 
-Status: **proposed**, not implemented. This document extends the existing Laravel licensing platform without altering activation or entitlement behavior.
+Status: draft Studio contracts and a portable native workflow core. The Studio persistence and local hardware integration described below are future work.
 
 ## Product principle
 
@@ -11,7 +11,7 @@ A workflow is a musical goal and its constraints; an execution plan is one valid
 ## Ownership boundaries
 
 - **Platform cloud (existing Laravel modular monolith):** user-owned studio inventories, verified and user-declared device capability profiles, saved workflow intents, versioned schemas, hosted MCP endpoints in a later milestone, and authenticated synchronization. Do not introduce MCP endpoints before authorization and privacy contracts are defined.
-- **Platform native shared library (future C++):** deterministic schema parsing, typed graph validation, capability matching, plan diagnostics, and non-real-time configuration compilation. Keep this library independent of Laravel and product-specific musical rules.
+- **Platform native shared library (C++):** deterministic schema parsing, typed graph validation, capability matching, plan diagnostics, and non-real-time configuration compilation. Keep this library independent of Laravel and product-specific musical rules.
 - **Harmonic Conductor:** chord detection, pitch adaptation, voice leading, and product UX.
 - **Rhythm Conductor:** Rytm pattern orchestration and Program Change scheduling, preserving its existing Max for Live reference behavior.
 
@@ -87,3 +87,25 @@ No cloud-hosted real-time sequencing, no claims of CV cable auto-detection, no u
 The draft 1.0 documents describe typed cables and provenance labels. They lack electrical ranges, connector standards, firmware-scoped evidence, and locally verified control paths. Port signal and direction checks establish graph compatibility. Bench confirmation establishes electrical and operational compatibility.
 
 The original intent contract leaves goals as human-readable text. The original plan contract reports diagnostics without identifying assigned devices, retained cables, or logical event routes. Role assignments and cable endpoints must resolve against the supplied inventory. Logical fan-in requires an explicit merge policy, and a physical input accepts one source in the current contract. A physical mixer must be represented as a device with separate inputs.
+
+
+## Portable workflow core
+
+Build and test with a C++20 toolchain and CMake 3.24 or later:
+
+```sh
+cmake -S native/studio -B /tmp/soundmine-studio-build
+cmake --build /tmp/soundmine-studio-build --config Release
+ctest --test-dir /tmp/soundmine-studio-build -C Release --output-on-failure
+python scripts/validate_studio_contracts.py --native-output /tmp/soundmine-studio-build/conformance
+```
+
+Consumers can link `Soundmine::Studio` and include `soundmine/studio/workflow.hpp`. CMake uses an installed nlohmann/json 3.12 package when available and otherwise fetches a hash-pinned release. An offline build can provide the extracted release using `FETCHCONTENT_SOURCE_DIR_NLOHMANN_JSON`. The library itself performs parsing and planning in memory with no network or hardware access.
+
+The core checks endpoint references, signal and event types, port direction, physical input conflicts, explicit event merge policies, logical cycles and note/clock fan-in. Physical cycles require port and device behavior context and are outside this check. Consider CV range, trigger polarity, clock standard, role co-existence and electrical limits during hardware verification.
+
+The planner evaluates the assigned studio and records assignments, proposed event routes, retained cable IDs, and stable diagnostic codes. A required capability missing from the assigned profile is infeasible. An existing claim below the requested evidence threshold is conditional. Soft requirements report advisory diagnostics. Verified evidence meets any threshold. Manufacturer documentation and user declarations satisfy their respective thresholds. An unverified threshold accepts any declared claim. The planner does not allocate unlisted equipment or apply configuration to a device.
+
+The reference plan retains the two declared BeatStep Pro to Blue Marvin cables and reports `PITCH_PATH_UNRESOLVED`. A feasible per-note adaptation on this route requires a confirmed active pitch cable, verified sequencer capability, and a separate local verification tied to the harmony source, sequencer and cable. The caller must discard that verification when the routing or connection session changes. Imported JSON has no field for attaching this authorization or making hardware changes. Native event routes are declarative. A product-specific runtime supplies event processing and merge execution.
+
+The original PostgreSQL suite passed with 94 tests and 609 assertions. CI runs both fixture validators and builds and tests the native library on Linux, macOS and Windows. The native suite passed locally on Linux and round-trips the original fixtures. The Python conformance check also accepted the generated intent and plan.

@@ -6,11 +6,13 @@ Run: python -m pip install 'jsonschema>=4.23,<5'
 """
 from __future__ import annotations
 
+import argparse
 import copy
 import json
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, ValidationError
+from referencing import Registry, Resource
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "schemas/studio/v1"
@@ -52,7 +54,11 @@ def validate_schema(document: dict) -> None:
         raise ValueError(f"Unsupported document kind: {kind}")
     schema = read(SCHEMAS / f"{KINDS[kind]}.schema.json")
     Draft202012Validator.check_schema(schema)
-    Draft202012Validator(schema).validate(document)
+    registry = Registry().with_resources(
+        (item["$id"], Resource.from_contents(item))
+        for item in (read(path) for path in SCHEMAS.glob("*.schema.json"))
+    )
+    Draft202012Validator(schema, registry=registry).validate(document)
 
 
 def validate_connections(graph: dict, profiles: list[dict]) -> None:
@@ -204,4 +210,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--native-output", type=Path)
+    args = parser.parse_args()
     main()
+    if args.native_output:
+        for filename in ("intent.json", "execution-plan.json"):
+            validate_schema(read(args.native_output / filename))
+        print("PASS: native serialized intent and execution plan conform to Studio JSON Schema")
