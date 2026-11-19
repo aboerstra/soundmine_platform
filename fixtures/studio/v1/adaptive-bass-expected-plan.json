@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "workflow.execution-plan",
+  "intentId": "adaptive-analog-bass",
+  "status": "conditional",
+  "diagnostics": [
+    {
+      "code": "PITCH_PATH_UNRESOLVED",
+      "severity": "warning",
+      "message": "Per-note harmonic adaptation is not established through the declared direct pitch CV path."
+    },
+    {
+      "code": "HARDWARE_PATH_PRESERVED",
+      "severity": "info",
+      "message": "Direct BSP pitch CV and gate connections are retained as declared."
+    }
+  ]
+}
