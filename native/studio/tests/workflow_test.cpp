@@ -132,6 +132,52 @@ void pitchCases(std::vector<DeviceProfile> profiles, ConnectionGraph graph, Inte
     expect(plan(profiles, graph, intent).status == Status::infeasible, "Missing hard capability accepted");
 }
 
+void standalonePatternCases()
+{
+    // Synthetic profiles describe the workflow without making claims about any device.
+    std::vector<DeviceProfile> profiles{
+        {"test.midi-interface", "Test", "MIDI interface", std::nullopt,
+         {{"out", Signal::midi, Direction::output, Evidence::verified}}, {}},
+        {"test.sequencer", "Test", "Hardware sequencer", std::nullopt,
+         {{"in", Signal::midi, Direction::input, Evidence::verified}},
+         {{"step-sequencing", Evidence::verified, std::nullopt},
+          {"internal-clock", Evidence::verified, std::nullopt},
+          {"midi-pattern-selection", Evidence::verified, std::nullopt}}},
+    };
+    const ConnectionGraph graph{
+        {{"interface", "test.midi-interface"}, {"sequencer", "test.sequencer"}},
+        {{"pattern-midi", {"interface", "out"}, {"sequencer", "in"}, Signal::midi, Confirmation::confirmed}},
+    };
+    const Intent intent{
+        .id = "standalone-patterns",
+        .name = "Standalone pattern orchestration",
+        .roles = {{"clockSource", "sequencer"}, {"patternSource", "sequencer"}},
+        .goals = {"Cue the next hardware pattern on the hardware clock"},
+        .constraints = {},
+        .requirements = {
+            {"clockSource", "internal-clock", Priority::hard, Evidence::verified},
+            {"patternSource", "step-sequencing", Priority::hard, Evidence::verified},
+            {"patternSource", "midi-pattern-selection", Priority::hard, Evidence::verified},
+        },
+        .eventGraph = EventGraph{{
+            {"queue-patterns", {}, {{"select", Event::control}}},
+            {"select-pattern", {{"select", {Event::control, std::nullopt}}}, {}},
+        }, {
+            {"pattern-change", {"queue-patterns", "select"}, {"select-pattern", "select"}},
+        }},
+    };
+
+    const auto standalone = plan(profiles, graph, intent);
+    expect(standalone.status == Status::feasible, "Standalone patterns required a DAW");
+    expect(standalone.assignments == intent.roles, "Hardware lost sequencing or clock responsibility");
+
+    profiles.back().capabilities.back().evidence = Evidence::userDeclared;
+    const auto unverified = plan(profiles, graph, intent);
+    expect(unverified.status == Status::conditional &&
+           has(unverified.diagnostics, "CAPABILITY_EVIDENCE_INSUFFICIENT"),
+           "Unverified pattern selection was treated as feasible");
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -155,6 +201,7 @@ int main(int argc, char** argv)
 
         physicalCases(profiles, graph, intent);
         pitchCases(profiles, graph, intent);
+        standalonePatternCases();
         intent.eventGraph = branchAndMerge();
         logicalCases(profiles, graph, intent);
         intent.requirements.push_back({"patternSource", "step-sequencing", Priority::hard, Evidence::verified});

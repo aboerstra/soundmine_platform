@@ -13,7 +13,7 @@ A workflow is a musical goal and its constraints; an execution plan is one valid
 - **Platform cloud (existing Laravel modular monolith):** user-owned studio inventories, verified and user-declared device capability profiles, saved workflow intents, versioned schemas, hosted MCP endpoints in a later milestone, and authenticated synchronization. Do not introduce MCP endpoints before authorization and privacy contracts are defined.
 - **Platform native shared library (C++):** deterministic schema parsing, typed graph validation, capability matching, plan diagnostics, and non-real-time configuration compilation. Keep this library independent of Laravel and product-specific musical rules.
 - **Harmonic Conductor:** chord detection, pitch adaptation, voice leading, and product UX.
-- **Rhythm Conductor:** Rytm pattern orchestration and Program Change scheduling, preserving its existing Max for Live reference behavior.
+- **Rhythm Conductor:** Rytm pattern orchestration and Program Change scheduling. The Max for Live reference defines existing behavior. Pattern orchestration is also a standalone product use case.
 
 A hosted service cannot discover physical CV cables or control local MIDI ports without an explicitly authorized local bridge. Real-time MIDI/CV performance must not depend on cloud availability.
 
@@ -53,6 +53,14 @@ Expected validation outcomes:
 - A requested per-note chord-aware pitch transformation is **conditional/unresolved** until a verified controllable pitch path is present.
 - Root transposition via external BSP commands remains unverified until bench-tested and must not be advertised as working.
 - The system can show alternative execution plans without silently substituting MIDI-to-CV for the user's direct hardware gate path.
+
+## Standalone pattern orchestration
+
+A musician can use Rhythm Conductor to cue a sequence of patterns in a studio with no DAW. A local Rhythm Conductor runtime manages the order and timing of changes over available MIDI connections. Hardware can keep its own patterns, sequencing, sound generation, and clock. Ableton or another DAW can participate when present.
+
+A standalone workflow assigns exactly one clock source for synchronized pattern changes. It requires a verified pattern-selection mechanism and a usable MIDI route for each controlled device. Timing-sensitive changes require checking device-specific switching behavior, including when a command must arrive for a change at a pattern boundary. Missing or unverified control capabilities should appear in the plan diagnostics.
+
+The native tests cover a DAW-free plan and the effect of unverified pattern-selection capability using synthetic profiles. Local MIDI scheduling and device timing verification belong to the product runtime.
 
 ## JSON contract strategy
 
