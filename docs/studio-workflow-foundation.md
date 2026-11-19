@@ -56,7 +56,9 @@ Expected validation outcomes:
 
 ## Standalone pattern orchestration
 
-A musician can use Rhythm Conductor to cue a sequence of patterns in a studio with no DAW. A local Rhythm Conductor runtime manages the order and timing of changes over available MIDI connections. Hardware can keep its own patterns, sequencing, sound generation, and clock. Ableton or another DAW can participate when present.
+A musician can use the standalone Rhythm Conductor desktop app to cue a sequence of patterns in a studio with no DAW. The desktop runtime connects to the studio's MIDI devices, follows the selected clock, and schedules each pattern change. Hardware can keep its own patterns, sequencing, sound generation, and clock. Ableton or another DAW can participate when present.
+
+An optional mobile companion can request a scene change and display which scene the desktop has queued or activated. The desktop determines the launch boundary and continues managing playback if the mobile connection drops. The desktop app can cue scenes on its own.
 
 A scene identifies a pattern target separately for each device. One scene could cue Analog Rytm pattern B1, BeatStep Pro pattern A4, and a separately selected SL61 MkIII pattern, with all three intended to start at the next bar. Pattern identifiers belong to each device. Hardware continues to play and repeat its own patterns between scene changes.
 
