@@ -135,47 +135,83 @@ void pitchCases(std::vector<DeviceProfile> profiles, ConnectionGraph graph, Inte
 void standalonePatternCases()
 {
     // Synthetic profiles describe the workflow without making claims about any device.
+    const DeviceProfile sequencerProfile{
+        "test.sequencer-a", "Test", "Hardware sequencer", std::nullopt,
+        {{"in", Signal::midi, Direction::input, Evidence::verified}},
+        {{"step-sequencing", Evidence::verified, std::nullopt},
+         {"midi-pattern-selection", Evidence::verified, std::nullopt}},
+    };
     std::vector<DeviceProfile> profiles{
         {"test.midi-interface", "Test", "MIDI interface", std::nullopt,
-         {{"out", Signal::midi, Direction::output, Evidence::verified}}, {}},
-        {"test.sequencer", "Test", "Hardware sequencer", std::nullopt,
-         {{"in", Signal::midi, Direction::input, Evidence::verified}},
-         {{"step-sequencing", Evidence::verified, std::nullopt},
-          {"internal-clock", Evidence::verified, std::nullopt},
-          {"midi-pattern-selection", Evidence::verified, std::nullopt}}},
+         {{"out-a", Signal::midi, Direction::output, Evidence::verified},
+          {"out-b", Signal::midi, Direction::output, Evidence::verified},
+          {"out-c", Signal::midi, Direction::output, Evidence::verified},
+          {"clock-in", Signal::midi, Direction::input, Evidence::verified}}, {}},
+        sequencerProfile, sequencerProfile, sequencerProfile,
     };
+    profiles[1].capabilities.push_back({"internal-clock", Evidence::verified, std::nullopt});
+    profiles[1].ports.push_back({"clock-out", Signal::midi, Direction::output, Evidence::verified});
+    profiles[2].id = "test.sequencer-b";
+    profiles[3].id = "test.sequencer-c";
     const ConnectionGraph graph{
-        {{"interface", "test.midi-interface"}, {"sequencer", "test.sequencer"}},
-        {{"pattern-midi", {"interface", "out"}, {"sequencer", "in"}, Signal::midi, Confirmation::confirmed}},
+        {{"interface", "test.midi-interface"}, {"sequencer-a", "test.sequencer-a"},
+         {"sequencer-b", "test.sequencer-b"}, {"sequencer-c", "test.sequencer-c"}},
+        {{"midi-a", {"interface", "out-a"}, {"sequencer-a", "in"}, Signal::midi, Confirmation::confirmed},
+         {"midi-b", {"interface", "out-b"}, {"sequencer-b", "in"}, Signal::midi, Confirmation::confirmed},
+         {"midi-c", {"interface", "out-c"}, {"sequencer-c", "in"}, Signal::midi, Confirmation::confirmed},
+         {"hardware-clock", {"sequencer-a", "clock-out"}, {"interface", "clock-in"},
+          Signal::midi, Confirmation::confirmed}},
     };
     const Intent intent{
         .id = "standalone-patterns",
         .name = "Standalone pattern orchestration",
-        .roles = {{"clockSource", "sequencer"}, {"patternSource", "sequencer"}},
-        .goals = {"Cue the next hardware pattern on the hardware clock"},
+        .roles = {{"clockSource", "sequencer-a"}, {"patternsA", "sequencer-a"},
+                  {"patternsB", "sequencer-b"}, {"patternsC", "sequencer-c"}},
+        .goals = {"Cue a different pattern on each device at a shared musical boundary"},
         .constraints = {},
         .requirements = {
             {"clockSource", "internal-clock", Priority::hard, Evidence::verified},
-            {"patternSource", "step-sequencing", Priority::hard, Evidence::verified},
-            {"patternSource", "midi-pattern-selection", Priority::hard, Evidence::verified},
+            {"patternsA", "step-sequencing", Priority::hard, Evidence::verified},
+            {"patternsB", "step-sequencing", Priority::hard, Evidence::verified},
+            {"patternsC", "step-sequencing", Priority::hard, Evidence::verified},
+            {"patternsA", "midi-pattern-selection", Priority::hard, Evidence::verified},
+            {"patternsB", "midi-pattern-selection", Priority::hard, Evidence::verified},
+            {"patternsC", "midi-pattern-selection", Priority::hard, Evidence::verified},
         },
         .eventGraph = EventGraph{{
-            {"queue-patterns", {}, {{"select", Event::control}}},
-            {"select-pattern", {{"select", {Event::control, std::nullopt}}}, {}},
+            {"track-clock", {}, {{"clock", Event::clock}}},
+            {"queue-patterns", {{"clock", {Event::clock, std::nullopt}}},
+             {{"select-a", Event::control}, {"select-b", Event::control}, {"select-c", Event::control}}},
+            {"select-a", {{"select", {Event::control, std::nullopt}}}, {}},
+            {"select-b", {{"select", {Event::control, std::nullopt}}}, {}},
+            {"select-c", {{"select", {Event::control, std::nullopt}}}, {}},
         }, {
-            {"pattern-change", {"queue-patterns", "select"}, {"select-pattern", "select"}},
+            {"clock-in", {"track-clock", "clock"}, {"queue-patterns", "clock"}},
+            {"change-a", {"queue-patterns", "select-a"}, {"select-a", "select"}},
+            {"change-b", {"queue-patterns", "select-b"}, {"select-b", "select"}},
+            {"change-c", {"queue-patterns", "select-c"}, {"select-c", "select"}},
         }},
     };
 
     const auto standalone = plan(profiles, graph, intent);
     expect(standalone.status == Status::feasible, "Standalone patterns required a DAW");
     expect(standalone.assignments == intent.roles, "Hardware lost sequencing or clock responsibility");
+    expect(standalone.eventGraph && standalone.eventGraph->routes.size() == 4,
+           "The plan lost a clock or pattern control route");
 
-    profiles.back().capabilities.back().evidence = Evidence::userDeclared;
+    auto& thirdTarget = profiles.back();
+    thirdTarget.capabilities.back().evidence = Evidence::userDeclared;
     const auto unverified = plan(profiles, graph, intent);
     expect(unverified.status == Status::conditional &&
-           has(unverified.diagnostics, "CAPABILITY_EVIDENCE_INSUFFICIENT"),
-           "Unverified pattern selection was treated as feasible");
+           unverified.diagnostics.size() == 1 &&
+           unverified.diagnostics.front().code == "CAPABILITY_EVIDENCE_INSUFFICIENT" &&
+           unverified.diagnostics.front().message == "patternsC: midi-pattern-selection",
+           "Unverified pattern selection did not identify the affected target");
+
+    thirdTarget.capabilities.pop_back();
+    const auto missing = plan(profiles, graph, intent);
+    expect(missing.status == Status::infeasible && has(missing.diagnostics, "CAPABILITY_MISSING"),
+           "The plan accepted a target with no pattern selection");
 }
 
 } // namespace

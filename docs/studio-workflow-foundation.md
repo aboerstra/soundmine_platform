@@ -58,9 +58,11 @@ Expected validation outcomes:
 
 A musician can use Rhythm Conductor to cue a sequence of patterns in a studio with no DAW. A local Rhythm Conductor runtime manages the order and timing of changes over available MIDI connections. Hardware can keep its own patterns, sequencing, sound generation, and clock. Ableton or another DAW can participate when present.
 
-A standalone workflow assigns exactly one clock source for synchronized pattern changes. It requires a verified pattern-selection mechanism and a usable MIDI route for each controlled device. Timing-sensitive changes require checking device-specific switching behavior, including when a command must arrive for a change at a pattern boundary. Missing or unverified control capabilities should appear in the plan diagnostics.
+A scene identifies a pattern target separately for each device. One scene could cue Analog Rytm pattern B1, BeatStep Pro pattern A4, and a separately selected SL61 MkIII pattern, with all three intended to start at the next bar. Pattern identifiers belong to each device. Hardware continues to play and repeat its own patterns between scene changes.
 
-The native tests cover a DAW-free plan and the effect of unverified pattern-selection capability using synthetic profiles. Local MIDI scheduling and device timing verification belong to the product runtime.
+A standalone workflow assigns one clock source for synchronized pattern changes. It requires a verified pattern-selection mechanism and a usable MIDI route for each controlled device. Different devices may need commands at different times to switch at the same musical boundary. Exact pattern addressing, external switching support, and cue timing need verification for the selected firmware and operating mode. Each target with missing or unverified control should appear in the plan diagnostics.
+
+The native tests cover DAW-free routing to multiple sequencers and check pattern-selection capability per target using synthetic profiles. Scene data, local MIDI scheduling, and device timing verification belong to subsequent product work.
 
 ## JSON contract strategy
 
