@@ -69,7 +69,26 @@ A standalone workflow assigns one clock source for synchronized pattern changes.
 
 The native tests cover DAW-free routing to multiple sequencers and check pattern-selection capability per target using synthetic profiles. Scene data, local MIDI scheduling, and device timing verification belong to subsequent product work.
 
-The first Ableton milestone is a JUCE VST3 prototype that reads Live's musical position, cues one Analog Rytm pattern, and verifies that the Program Change reaches the Rytm early enough for the requested pattern boundary. Check the MIDI message at the hardware output and the resulting pattern change on the device. Use the Max for Live reference to compare cue timing and behavior. Keep scene and capability planning in the shared C++ core so the desktop app can use the same rules with its own transport and MIDI connections.
+### JUCE VST3 bench prototype
+
+The first prototype lives in `native/rhythm-conductor`. It reads the host playhead, accepts a single queued MIDI Program Change, and schedules it with a configurable lead before a bar boundary. It requires a playing host with valid position, bar start, tempo and meter. A request with insufficient lead moves to the following bar. A seek, stop, meter change, or loss of transport cancels a pending cue. The prototype disables cues while looping or rendering offline. It uses no Max components.
+
+Build the unsigned development plug-in with CMake 3.24 or later, a C++20 compiler, and the platform's JUCE prerequisites. CMake uses JUCE 8.0.12 or fetches the hash-pinned source at configure time.
+
+```sh
+cmake -S native/rhythm-conductor -B /tmp/rhythm-build -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/rhythm-build --config Release
+ctest --test-dir /tmp/rhythm-build -C Release --output-on-failure
+```
+
+The bundle is under `RhythmConductor_artefacts/Release/VST3` in the build directory. Set `-DSOUNDMINE_BUILD_VST3=OFF` on a separate configure to run the scheduler tests without JUCE. The Rhythm Conductor GitHub Actions workflow builds development bundles for macOS and Windows.
+
+1. Load Rhythm Conductor on a Live MIDI track and configure a route from its MIDI output to the Analog Rytm. The instrument has a silent audio output bus. Check the MIDI route with a monitor on the hardware output.
+2. Put the Rytm in the desired sync and pattern receive mode. Select its MIDI channel and the program corresponding to the target on that device. The interface uses program numbers 1–128, with MIDI data bytes 0–127.
+3. Disable Live's loop, set the cue lead in quarter notes, start playback, and click **Queue program**. Confirm the outgoing Program Change, then confirm whether the Rytm actually switched on the intended pattern boundary. Compare the observed lead and switching behavior with the Max for Live reference.
+4. If the outgoing message is missing, record the Live version, platform, MIDI route and plug-in settings. A separate test can evaluate direct MIDI output while the plug-in follows Live transport.
+
+The plug-in status reports submission to the host. Hardware routing, pattern addressing and switching remain bench checks. Multi-device scene scheduling and the standalone runtime will use the same planning rules once the single-device path is validated.
 
 ## JSON contract strategy
 

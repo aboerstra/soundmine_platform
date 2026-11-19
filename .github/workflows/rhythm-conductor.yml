@@ -1,0 +1,37 @@
+name: Rhythm Conductor prototype
+
+on:
+  push:
+    paths:
+      - 'native/rhythm-conductor/**'
+      - '.github/workflows/rhythm-conductor.yml'
+  pull_request:
+    paths:
+      - 'native/rhythm-conductor/**'
+      - '.github/workflows/rhythm-conductor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure the prototype
+        run: cmake -S native/rhythm-conductor -B rhythm-build -DCMAKE_BUILD_TYPE=Release
+      - name: Build the scheduler tests and VST3
+        run: cmake --build rhythm-build --config Release --parallel 2
+      - name: Test cue scheduling
+        run: ctest --test-dir rhythm-build -C Release --output-on-failure
+      - name: Verify the VST3 bundle was generated
+        run: test -d "rhythm-build/RhythmConductor_artefacts/Release/VST3/Rhythm Conductor.vst3"
