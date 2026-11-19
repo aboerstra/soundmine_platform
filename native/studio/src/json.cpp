@@ -234,9 +234,9 @@ T decode(const Json& json)
             invalid("Expected a boolean");
         return json.get<bool>();
     } else if constexpr (std::is_enum_v<T>) {
-        if (json.is_string())
+        if (const auto* text = json.get_ptr<const Json::string_t*>())
             for (const auto& [value, name] : values(T{}))
-                if (json == name)
+                if (*text == name)
                     return value;
         invalid("Unknown enumerated value");
     } else if constexpr (IsVector<T>::value) {
@@ -381,8 +381,8 @@ T readDocument(std::string_view input, std::string_view expectedKind)
     };
     try {
         auto json = Json::parse(input.begin(), input.end(), inspect);
-        if (!json.is_object() || json.value("schemaVersion", Json{}) != "1.0" ||
-            json.value("kind", Json{}) != expectedKind)
+        if (!json.is_object() || json.value("schemaVersion", Json{}) != Json("1.0") ||
+            json.value("kind", Json{}) != Json(expectedKind))
             invalid("Unsupported Studio JSON kind or version");
         json.erase("schemaVersion");
         json.erase("kind");
