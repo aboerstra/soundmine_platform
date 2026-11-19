@@ -23,13 +23,32 @@ KINDS = {
 }
 
 
+def unique_object(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate JSON member: {key}")
+        result[key] = value
+    return result
+
+
 def read(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_object)
+
+
+def index_by_id(records: list[dict], label: str) -> dict:
+    index = {}
+    for record in records:
+        identifier = record["id"]
+        if identifier in index:
+            raise ValueError(f"Duplicate {label}: {identifier}")
+        index[identifier] = record
+    return index
 
 
 def validate_schema(document: dict) -> None:
-    kind = document.get("kind")
-    if kind not in KINDS:
+    kind = document.get("kind") if isinstance(document, dict) else None
+    if not isinstance(kind, str) or kind not in KINDS:
         raise ValueError(f"Unsupported document kind: {kind}")
     schema = read(SCHEMAS / f"{KINDS[kind]}.schema.json")
     Draft202012Validator.check_schema(schema)
@@ -38,27 +57,27 @@ def validate_schema(document: dict) -> None:
 
 def validate_connections(graph: dict, profiles: list[dict]) -> None:
     validate_schema(graph)
-    catalog = {p["id"]: p for p in profiles}
-    instances = {}
-    for device in graph["devices"]:
-        if device["id"] in instances:
-            raise ValueError(f"Duplicate device instance: {device['id']}")
+    catalog = index_by_id(profiles, "device profile")
+    profile_ports = {}
+    for profile in profiles:
+        validate_schema(profile)
+        profile_ports[profile["id"]] = index_by_id(profile["ports"], "profile port")
+        index_by_id(profile["capabilities"], "profile capability")
+
+    instances = index_by_id(graph["devices"], "device instance")
+    for device in instances.values():
         if device["profileId"] not in catalog:
             raise ValueError(f"Unknown device profile: {device['profileId']}")
-        instances[device["id"]] = catalog[device["profileId"]]
 
-    seen = set()
-    for edge in graph["connections"]:
-        if edge["id"] in seen:
-            raise ValueError(f"Duplicate connection: {edge['id']}")
-        seen.add(edge["id"])
+    destinations = set()
+    for edge in index_by_id(graph["connections"], "connection").values():
         ends = []
         for key in ("from", "to"):
             endpoint = edge[key]
             device = instances.get(endpoint["deviceId"])
             if device is None:
                 raise ValueError(f"Unknown device: {endpoint['deviceId']}")
-            port = next((p for p in device["ports"] if p["id"] == endpoint["portId"]), None)
+            port = profile_ports[device["profileId"]].get(endpoint["portId"])
             if port is None:
                 raise ValueError(f"Unknown port: {endpoint['portId']}")
             if port["signal"] != edge["signal"]:
@@ -68,6 +87,10 @@ def validate_connections(graph: dict, profiles: list[dict]) -> None:
             raise ValueError("Source port cannot transmit")
         if ends[1]["direction"] not in ("input", "bidirectional"):
             raise ValueError("Destination port cannot receive")
+        destination = edge["to"]["deviceId"], edge["to"]["portId"]
+        if destination in destinations:
+            raise ValueError(f"Multiple physical sources for {destination}")
+        destinations.add(destination)
 
 
 def reference_plan(intent: dict, graph: dict) -> dict:
@@ -75,6 +98,10 @@ def reference_plan(intent: dict, graph: dict) -> dict:
     validate_schema(intent)
     validate_schema(graph)
     roles = intent["roles"]
+    instances = {device["id"] for device in graph["devices"]}
+    for role, device in roles.items():
+        if device not in instances:
+            raise ValueError(f"Unknown device {device} for role {role}")
     pattern = roles.get("patternSource")
     synth = roles.get("soundGenerator")
     direct_pitch = any(
@@ -160,7 +187,20 @@ def main() -> None:
     wrong_direction["connections"][0]["to"]["portId"] = "seq1-pitch"
     must_fail(lambda: validate_connections(wrong_direction, profiles), ValueError)
 
-    print("PASS: 6 JSON Schema fixtures, physical graph, reference plan, 6 negative cases")
+    duplicate_port = copy.deepcopy(profiles)
+    duplicate_port[0]["ports"].append(copy.deepcopy(duplicate_port[0]["ports"][0]))
+    must_fail(lambda: validate_connections(graph, duplicate_port), ValueError)
+
+    duplicate_destination = copy.deepcopy(graph)
+    duplicate_destination["connections"].append(dict(graph["connections"][0], id="second-pitch"))
+    must_fail(lambda: validate_connections(duplicate_destination, profiles), ValueError)
+
+    missing_role = copy.deepcopy(intent)
+    missing_role["roles"]["harmonySource"] = "missing"
+    must_fail(lambda: reference_plan(missing_role, graph), ValueError)
+    must_fail(lambda: json.loads('{"id":"first","id":"second"}', object_pairs_hook=unique_object), ValueError)
+
+    print("PASS: 6 JSON Schema fixtures, physical graph, reference plan, 10 negative cases")
 
 
 if __name__ == "__main__":

@@ -9,13 +9,15 @@ This directory contains the first **draft** Soundmine Studio interchange contrac
 
 Reference fixtures are in `fixtures/studio/v1/`.
 
-Run the dependency-free **smoke test** from the repository root:
+From the repository root, run the draft 2020-12 conformance checks and the dependency-free smoke test:
 
 ```sh
+python -m pip install 'jsonschema>=4.23,<5'
+python scripts/validate_studio_contracts.py
 node scripts/validate-studio-fixtures.mjs
 ```
 
-The smoke test checks selected required fields and typed graph semantics, including a negative mismatched-signal case. **It is not a full JSON Schema validator** and does not compile arbitrary workflows. Add full draft-2020-12 schema conformance validation, C++ parity tests, stable diagnostic identifiers, cycle/merge handling, and user authorization before treating these contracts as production-ready.
+JSON Schema checks document structure. The Python validator also checks selected cross-document constraints, including identifier uniqueness, port direction and signal compatibility, exclusive physical inputs, and reference intent roles. Its reference plan check covers the supplied fixture only.
 
 The example uses the user's declared BeatStep Pro pitch CV and gate connections to the Behringer 2600. It intentionally returns a conditional plan for per-note chord adaptation: the direct analog pitch path has no verified mechanism for per-step software retuning. This fixture must not be interpreted as proof of the hardware's externally controllable sequencing features.
 

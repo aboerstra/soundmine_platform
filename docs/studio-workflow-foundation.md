@@ -80,3 +80,10 @@ LLMs may retrieve authorized studio context, propose workflow intents, compare p
 ## Non-goals for the foundation milestone
 
 No cloud-hosted real-time sequencing, no claims of CV cable auto-detection, no unverified BeatStep Pro firmware capabilities, no changes to existing license grants, and no assumption that Ableton VST3 MIDI routing works without host-specific validation.
+
+
+## Foundation review
+
+The draft 1.0 documents describe typed cables and provenance labels. They lack electrical ranges, connector standards, firmware-scoped evidence, and locally verified control paths. Port signal and direction checks establish graph compatibility. Bench confirmation establishes electrical and operational compatibility.
+
+The original intent contract leaves goals as human-readable text. The original plan contract reports diagnostics without identifying assigned devices, retained cables, or logical event routes. Role assignments and cable endpoints must resolve against the supplied inventory. Logical fan-in requires an explicit merge policy, and a physical input accepts one source in the current contract. A physical mixer must be represented as a device with separate inputs.
