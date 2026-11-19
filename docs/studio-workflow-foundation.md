@@ -13,7 +13,7 @@ A workflow is a musical goal and its constraints; an execution plan is one valid
 - **Platform cloud (existing Laravel modular monolith):** user-owned studio inventories, verified and user-declared device capability profiles, saved workflow intents, versioned schemas, hosted MCP endpoints in a later milestone, and authenticated synchronization. Do not introduce MCP endpoints before authorization and privacy contracts are defined.
 - **Platform native shared library (C++):** deterministic schema parsing, typed graph validation, capability matching, plan diagnostics, and non-real-time configuration compilation. Keep this library independent of Laravel and product-specific musical rules.
 - **Harmonic Conductor:** chord detection, pitch adaptation, voice leading, and product UX.
-- **Rhythm Conductor:** Rytm pattern orchestration and Program Change scheduling. The Max for Live reference defines existing behavior. Pattern orchestration is also a standalone product use case.
+- **Rhythm Conductor:** Rytm pattern orchestration and Program Change scheduling. The JUCE plug-in is the Ableton Live product target. The existing Max for Live device is a behavior reference. Pattern orchestration is also a standalone product use case.
 
 A hosted service cannot discover physical CV cables or control local MIDI ports without an explicitly authorized local bridge. Real-time MIDI/CV performance must not depend on cloud availability.
 
@@ -58,7 +58,7 @@ Expected validation outcomes:
 
 Rhythm Conductor has two ways to run:
 
-- **Inside Ableton Live.** The Max for Live integration runs in the Live set and uses Live's transport and configured MIDI routing to schedule pattern changes. This mode runs entirely within Live.
+- **Inside Ableton Live.** A JUCE plug-in hosted in the Live set follows Live's transport and schedules pattern changes. This mode runs entirely within Live. The plug-in's route to the hardware must be verified in Live before considering the workflow feasible.
 - **Standalone.** The desktop app runs the workflow in a studio without a DAW. It connects to the studio's MIDI devices, follows the selected clock, and schedules each pattern change. An optional mobile companion can request a scene change and display what the desktop has queued or activated. The desktop determines the launch boundary and continues managing playback if the mobile connection drops.
 
 In either mode, hardware can keep its own patterns, sequencing, and sound generation.
@@ -68,6 +68,8 @@ A scene identifies a pattern target separately for each device. One scene could 
 A standalone workflow assigns one clock source for synchronized pattern changes. It requires a verified pattern-selection mechanism and a usable MIDI route for each controlled device. Different devices may need commands at different times to switch at the same musical boundary. Exact pattern addressing, external switching support, and cue timing need verification for the selected firmware and operating mode. Each target with missing or unverified control should appear in the plan diagnostics.
 
 The native tests cover DAW-free routing to multiple sequencers and check pattern-selection capability per target using synthetic profiles. Scene data, local MIDI scheduling, and device timing verification belong to subsequent product work.
+
+The first Ableton milestone is a JUCE VST3 prototype that reads Live's musical position, cues one Analog Rytm pattern, and verifies that the Program Change reaches the Rytm early enough for the requested pattern boundary. Check the MIDI message at the hardware output and the resulting pattern change on the device. Use the Max for Live reference to compare cue timing and behavior. Keep scene and capability planning in the shared C++ core so the desktop app can use the same rules with its own transport and MIDI connections.
 
 ## JSON contract strategy
 
