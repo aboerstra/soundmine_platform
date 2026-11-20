@@ -37,10 +37,10 @@ jobs:
       - run: composer validate --strict
       - run: composer check-platform-reqs
       - run: vendor/bin/pint --test
-      - run: composer test
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: composer test

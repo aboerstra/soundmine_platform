@@ -1,6 +1,6 @@
 # TheSoundMine Platform
 
-Commercial customer and licensing platform for TheSoundMine audio products. The first product is **TheSoundMine Pattern Conductor**, a JUCE VST3 plugin for macOS and Windows. The architecture supports multiple products from the start.
+Commercial customer and licensing platform for TheSoundMine audio products. The first product is **TheSoundMine Pattern Conductor**, a JUCE VST3 plugin for macOS and Windows. The architecture supports multiple products from the start. The brand website is [thesoundmine.com](https://thesoundmine.com). See the [brand kit](docs/brand.md) for naming and assets.
 
 This is an **online activation preview**, with no payments, certificate issuance or production signing. No production credentials are included. Nothing has been deployed.
 

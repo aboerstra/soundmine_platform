@@ -7,4 +7,23 @@
             <p class="field-help">Creating an account? Follow the invitation email sent to you. If you can’t find it, ask the person who invited you for a new link.</p>
         </div>
     </section>
+    <section class="mt-12 space-y-5" aria-labelledby="products-heading">
+        <h2 id="products-heading" class="text-3xl">Hardware-first music workflows</h2>
+        <p class="muted">TheSoundMine helps musicians coordinate patterns, harmony, and signal paths across hardware and software.</p>
+        <div class="grid gap-4 md:grid-cols-3">
+            <section class="card space-y-4">
+                <h3><img class="h-10 w-full object-contain object-left" src="{{ asset('brand/products/thesoundmine-pattern-conductor-lockup-on-dark.svg') }}" alt="TheSoundMine Pattern Conductor"></h3>
+                <p class="muted">Cue pattern changes across hardware sequencers on a shared musical boundary.</p>
+            </section>
+            <section class="card space-y-4">
+                <h3><img class="h-10 w-full object-contain object-left" src="{{ asset('brand/products/thesoundmine-harmonic-conductor-lockup-on-dark.svg') }}" alt="TheSoundMine Harmonic Conductor"></h3>
+                <p class="muted">Use live chords to guide pitch changes and voice leading on controllable signal paths.</p>
+            </section>
+            <section class="card space-y-4">
+                <h3><img class="h-10 w-full object-contain object-left" src="{{ asset('brand/products/thesoundmine-studio-lockup-on-dark.svg') }}" alt="TheSoundMine Studio"></h3>
+                <p class="muted">Model your gear and its connections to plan workflows around the studio you have.</p>
+            </section>
+        </div>
+        <p class="muted">The customer portal and online activation are in preview.</p>
+    </section>
 </x-layouts.portal>

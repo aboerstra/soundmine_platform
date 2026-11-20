@@ -115,7 +115,11 @@ class DomainFoundationTest extends TestCase
         $this->seed();
         $this->seed();
         $this->assertDatabaseCount('products', 1);
-        $this->assertDatabaseHas('products', ['slug' => 'rhythm-conductor', 'is_active' => false]);
+        $this->assertDatabaseHas('products', [
+            'slug' => 'rhythm-conductor',
+            'name' => 'TheSoundMine Pattern Conductor',
+            'is_active' => false,
+        ]);
         $this->assertDatabaseCount('users', 0);
         $this->assertDatabaseCount('licenses', 0);
     }

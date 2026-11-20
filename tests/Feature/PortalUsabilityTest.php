@@ -90,7 +90,7 @@ class PortalUsabilityTest extends TestCase
         $this->assertTrue($product->fresh()->is_active);
         $this->assertSame($product->id, $license->fresh()->product_id);
         $migration->down();
-        $this->assertSame('Rhythm Conductor', $product->fresh()->name);
+        $this->assertSame('TheSoundMine Pattern Conductor', $product->fresh()->name);
     }
 
     public function test_catalog_seed_uses_the_brand_name_without_renaming_existing_custom_products(): void

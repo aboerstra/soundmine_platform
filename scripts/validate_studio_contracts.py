@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""Soundmine Studio v1: JSON Schema and typed physical graph conformance checks.
+
+Run: python -m pip install 'jsonschema>=4.23,<5'
+     python scripts/validate_studio_contracts.py
+"""
+from __future__ import annotations
+
+import argparse
+import copy
+import json
+from pathlib import Path
+
+from jsonschema import Draft202012Validator, ValidationError
+from referencing import Registry, Resource
+
+ROOT = Path(__file__).resolve().parents[1]
+SCHEMAS = ROOT / "schemas/studio/v1"
+FIXTURES = ROOT / "fixtures/studio/v1"
+KINDS = {
+    "studio.device-profile": "device-profile",
+    "studio.connections": "connections",
+    "workflow.intent": "workflow-intent",
+    "workflow.execution-plan": "execution-plan",
+}
+
+
+def unique_object(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate JSON member: {key}")
+        result[key] = value
+    return result
+
+
+def read(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_object)
+
+
+def index_by_id(records: list[dict], label: str) -> dict:
+    index = {}
+    for record in records:
+        identifier = record["id"]
+        if identifier in index:
+            raise ValueError(f"Duplicate {label}: {identifier}")
+        index[identifier] = record
+    return index
+
+
+def validate_schema(document: dict) -> None:
+    kind = document.get("kind") if isinstance(document, dict) else None
+    if not isinstance(kind, str) or kind not in KINDS:
+        raise ValueError(f"Unsupported document kind: {kind}")
+    schema = read(SCHEMAS / f"{KINDS[kind]}.schema.json")
+    Draft202012Validator.check_schema(schema)
+    registry = Registry().with_resources(
+        (item["$id"], Resource.from_contents(item))
+        for item in (read(path) for path in SCHEMAS.glob("*.schema.json"))
+    )
+    Draft202012Validator(schema, registry=registry).validate(document)
+
+
+def validate_connections(graph: dict, profiles: list[dict]) -> None:
+    validate_schema(graph)
+    catalog = index_by_id(profiles, "device profile")
+    profile_ports = {}
+    for profile in profiles:
+        validate_schema(profile)
+        profile_ports[profile["id"]] = index_by_id(profile["ports"], "profile port")
+        index_by_id(profile["capabilities"], "profile capability")
+
+    instances = index_by_id(graph["devices"], "device instance")
+    for device in instances.values():
+        if device["profileId"] not in catalog:
+            raise ValueError(f"Unknown device profile: {device['profileId']}")
+
+    destinations = set()
+    for edge in index_by_id(graph["connections"], "connection").values():
+        ends = []
+        for key in ("from", "to"):
+            endpoint = edge[key]
+            device = instances.get(endpoint["deviceId"])
+            if device is None:
+                raise ValueError(f"Unknown device: {endpoint['deviceId']}")
+            port = profile_ports[device["profileId"]].get(endpoint["portId"])
+            if port is None:
+                raise ValueError(f"Unknown port: {endpoint['portId']}")
+            if port["signal"] != edge["signal"]:
+                raise ValueError(f"Signal mismatch at {endpoint['portId']}")
+            ends.append(port)
+        if ends[0]["direction"] not in ("output", "bidirectional"):
+            raise ValueError("Source port cannot transmit")
+        if ends[1]["direction"] not in ("input", "bidirectional"):
+            raise ValueError("Destination port cannot receive")
+        destination = edge["to"]["deviceId"], edge["to"]["portId"]
+        if destination in destinations:
+            raise ValueError(f"Multiple physical sources for {destination}")
+        destinations.add(destination)
+
+
+def reference_plan(intent: dict, graph: dict) -> dict:
+    """Only the first documented acceptance scenario, not a general planner."""
+    validate_schema(intent)
+    validate_schema(graph)
+    roles = intent["roles"]
+    instances = {device["id"] for device in graph["devices"]}
+    for role, device in roles.items():
+        if device not in instances:
+            raise ValueError(f"Unknown device {device} for role {role}")
+    pattern = roles.get("patternSource")
+    synth = roles.get("soundGenerator")
+    direct_pitch = any(
+        e["signal"] == "pitch-cv"
+        and e["from"]["deviceId"] == pattern
+        and e["to"]["deviceId"] == synth
+        for e in graph["connections"]
+    )
+    direct_gate = any(
+        e["signal"] == "gate"
+        and e["from"]["deviceId"] == pattern
+        and e["to"]["deviceId"] == synth
+        for e in graph["connections"]
+    )
+    constraints = intent["constraints"]
+    diagnostics = []
+    if constraints.get("requirePerNoteHarmonicAdaptation") and constraints.get("preserveDirectCvGate") and direct_pitch and direct_gate:
+        diagnostics.append({
+            "code": "PITCH_PATH_UNRESOLVED",
+            "severity": "warning",
+            "message": "Per-note harmonic adaptation is not established through the declared direct pitch CV path.",
+        })
+    if constraints.get("preserveDirectCvGate") and direct_pitch and direct_gate:
+        diagnostics.append({
+            "code": "HARDWARE_PATH_PRESERVED",
+            "severity": "info",
+            "message": "Direct BSP pitch CV and gate connections are retained as declared.",
+        })
+    return {
+        "schemaVersion": "1.0",
+        "kind": "workflow.execution-plan",
+        "intentId": intent["id"],
+        "status": "conditional" if diagnostics and diagnostics[0]["code"] == "PITCH_PATH_UNRESOLVED" else "infeasible",
+        "diagnostics": diagnostics,
+    }
+
+
+def must_fail(fn, error_type: type[Exception]) -> None:
+    try:
+        fn()
+    except error_type:
+        return
+    raise AssertionError(f"Expected {error_type.__name__}")
+
+
+def main() -> None:
+    docs = {p.stem: read(p) for p in FIXTURES.glob("*.json")}
+    assert len(docs) == 6, f"Expected six reference fixtures, found {len(docs)}"
+    for document in docs.values():
+        validate_schema(document)
+    profiles = [doc for doc in docs.values() if doc["kind"] == "studio.device-profile"]
+    graph = docs["bsp-2600-connections"]
+    intent = docs["adaptive-bass-intent"]
+    validate_connections(graph, profiles)
+    actual = reference_plan(intent, graph)
+    assert actual == docs["adaptive-bass-expected-plan"]
+    validate_schema(actual)
+
+    mismatch = copy.deepcopy(graph)
+    mismatch["connections"][0]["signal"] = "gate"
+    must_fail(lambda: validate_connections(mismatch, profiles), ValueError)
+
+    unknown_port = copy.deepcopy(graph)
+    unknown_port["connections"][0]["to"]["portId"] = "missing"
+    must_fail(lambda: validate_connections(unknown_port, profiles), ValueError)
+
+    unknown_profile = copy.deepcopy(graph)
+    unknown_profile["devices"][0]["profileId"] = "missing"
+    must_fail(lambda: validate_connections(unknown_profile, profiles), ValueError)
+
+    wrong_version = copy.deepcopy(intent)
+    wrong_version["schemaVersion"] = "99.0"
+    must_fail(lambda: validate_schema(wrong_version), ValidationError)
+
+    extra_property = copy.deepcopy(intent)
+    extra_property["untrustedCommand"] = "execute"
+    must_fail(lambda: validate_schema(extra_property), ValidationError)
+
+    wrong_direction = copy.deepcopy(graph)
+    wrong_direction["connections"][0]["from"]["deviceId"] = "marvin"
+    wrong_direction["connections"][0]["from"]["portId"] = "pitch-in"
+    wrong_direction["connections"][0]["to"]["deviceId"] = "bsp"
+    wrong_direction["connections"][0]["to"]["portId"] = "seq1-pitch"
+    must_fail(lambda: validate_connections(wrong_direction, profiles), ValueError)
+
+    duplicate_port = copy.deepcopy(profiles)
+    duplicate_port[0]["ports"].append(copy.deepcopy(duplicate_port[0]["ports"][0]))
+    must_fail(lambda: validate_connections(graph, duplicate_port), ValueError)
+
+    duplicate_destination = copy.deepcopy(graph)
+    duplicate_destination["connections"].append(dict(graph["connections"][0], id="second-pitch"))
+    must_fail(lambda: validate_connections(duplicate_destination, profiles), ValueError)
+
+    missing_role = copy.deepcopy(intent)
+    missing_role["roles"]["harmonySource"] = "missing"
+    must_fail(lambda: reference_plan(missing_role, graph), ValueError)
+    must_fail(lambda: json.loads('{"id":"first","id":"second"}', object_pairs_hook=unique_object), ValueError)
+
+    print("PASS: 6 JSON Schema fixtures, physical graph, reference plan, 10 negative cases")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--native-output", type=Path)
+    args = parser.parse_args()
+    main()
+    if args.native_output:
+        for filename in ("intent.json", "execution-plan.json"):
+            validate_schema(read(args.native_output / filename))
+        print("PASS: native serialized intent and execution plan conform to Studio JSON Schema")

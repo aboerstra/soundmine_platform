@@ -13,7 +13,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('products')->where('slug', 'rhythm-conductor')->where('name', 'TheSoundMine Pattern Conductor')
-            ->update(['name' => 'Rhythm Conductor']);
+        // The earlier catalog migration and the product seed both establish this name.
     }
 };

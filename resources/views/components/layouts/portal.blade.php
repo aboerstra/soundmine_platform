@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
     <meta name="color-scheme" content="dark">
-    <title>{{ $title ?? 'Customer portal' }} · TheSoundMine</title>
+    <title>{{ $title ? $title.' · ' : '' }}TheSoundMine Customer Portal</title>
     <link rel="icon" href="{{ asset('brand/favicon.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ asset('brand/favicon-32.png') }}" type="image/png" sizes="32x32">
     <link rel="stylesheet" href="{{ asset('brand/fonts.css') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
