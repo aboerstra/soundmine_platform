@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['authorization_code', 'installation_token']);
+        $exceptions->dontFlash(['authorization_code', 'installation_token', 'code', 'state']);
         $exceptions->render(function (NotFoundHttpException $exception, Request $request) {
             if ($request->is('api/v1/products/*')) {
                 return response()->json(['error' => ['code' => 'resource_not_found', 'message' => 'The requested resource was not found.']], 404)->header('Cache-Control', 'no-store, private');

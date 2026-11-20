@@ -8,7 +8,7 @@ The repository originally contained only a one-line README at `abc21b0`. The fou
 
 ## Stack and structure
 
-- Laravel 13, PHP 8.5, PostgreSQL 17
+- Laravel 13, PHP 8.5, PostgreSQL 17; Laravel Socialite 5 for optional Google sign-in
 - Filament 5 administration and Livewire 4 customer portal
 - PHPUnit 12 and Laravel Pint; Vite 8 frontend tooling
 - Exact PHP and frontend dependencies in `composer.lock` and `package-lock.json`
@@ -75,6 +75,31 @@ Mail uses Laravel's configured notification channels. The development default is
 The new migration normalizes existing user emails and adds a case-insensitive unique index. Existing case/whitespace-equivalent duplicate accounts must be reconciled before applying it. Rollback drops invitation and audit tables and cannot restore original email casing; use a forward fix once these records contain real history.
 
 License history is append-only through the application's model and has no edit/delete UI. It is not a tamper-proof ledger against privileged database access. Invitation acceptance and license changes use PostgreSQL row locks; license updates and audit insertion commit or roll back together. Manual entitlement values are strings in this phase; the existing JSONB storage can still display older structured values. The status API reports online activation separately from signed licensing, which remains unavailable.
+
+## Google customer sign-in
+
+Laravel Socialite 5 adds optional Google sign-in to the invite-only customer portal. It is disabled by default. Password login and recovery continue to work. No Google application, credential or consent screen has been created by this change.
+
+To configure it yourself, register a **Web application** OAuth client in Google Cloud, configure its consent screen/audience and test users as required, and register your portal origin followed by `/auth/google/callback` as the exact authorized redirect URI. Use HTTPS outside local development. Put these values in your ignored environment configuration:
+
+```dotenv
+GOOGLE_AUTH_ENABLED=true
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=
+```
+
+Supply your own client ID, secret and complete registered callback URI. Keep them out of Git, browser code and chat. Run the new migration and refresh Laravel's configuration cache after configuration changes. All three values and the enabled flag are required; otherwise Google buttons are hidden and OAuth endpoints return 404. Missing configuration does not disable local password login. Disconnecting a stored link remains available even when Google is disabled.
+
+- **Existing customers:** sign in with a password, open **Account sign-in**, confirm the current password and connect the verified Google account matching the Soundmine email. A matching email never automatically links or logs into an existing account. Disconnecting also requires the current password.
+- **Invited customers:** open the invitation and choose **Accept invitation with Google**. Google must confirm the invitation's exact normalized email as verified. Invitation validity is checked again after returning from Google. Existing accounts/identities are never overwritten; expired, reissued or consumed invitations cannot create accounts.
+- **Returning customers:** use **Sign in with Google** after linking or accepting a Google invitation. The stable Google subject selects the existing User; subsequent Google email changes do not rewrite the Soundmine email or transfer licenses. Unlinked Google users cannot register through the login screen.
+
+Google-created accounts are verified immediately and receive an unknown random password hash. To establish a password for recovery/disconnection, sign out and use the existing password recovery flow sent to the Soundmine email. Administrators cannot link or authenticate via these Google endpoints; Filament continues using its existing password authentication.
+
+OAuth initiation uses CSRF-protected POST forms. Socialite checks session state and PKCE; the single-use login/link/invitation context expires after ten minutes and is bound to the initiating session (and user/password version when linking). Starting another flow replaces the previous one. Only `openid` and `email` scopes are requested. The database stores the provider and stable subject with unique `(provider, provider_subject)` and `(user_id, provider)` constraints, not Google tokens or profile photos. Invitation tokens in the temporary OAuth session are encrypted. Do not record OAuth query strings or provider responses in proxy/access logs; the application reports only exception classes for provider failures. Unlinking stops future Google sign-ins; existing browser sessions remain until sign-out, expiry or password reset.
+
+Tests use Socialite fakes and Guzzle response fixtures, including the actual state/PKCE exchange path. A live Google consent flow still needs verification with your configured OAuth client before external use. No external Google request or email is sent by tests. Other identity providers are not implemented.
 
 ## Online activation preview
 

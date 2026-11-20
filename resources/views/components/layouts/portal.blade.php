@@ -9,7 +9,13 @@
     @livewireStyles
 </head>
 <body>
-    <header><a href="/">Soundmine</a></header>
+    <header><a href="/">Soundmine</a>
+        @auth
+            @if (! auth()->user()->is_admin)
+                <a href="{{ route('portal.account') }}">Account sign-in</a>
+            @endif
+        @endauth
+    </header>
     <main>{{ $slot }}</main>
     @livewireScripts
 </body>
