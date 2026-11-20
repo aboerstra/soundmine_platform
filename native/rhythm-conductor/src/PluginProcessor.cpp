@@ -230,9 +230,10 @@ public:
     {
         setLookAndFeel(&brand_);
         addSetting(channel_, channelLabel_, "MIDI channel");
-        addSetting(program_, programLabel_, "MIDI program (1–128)");
+        addSetting(program_, programLabel_, "MIDI program (1 to 128)");
         addSetting(lead_, leadLabel_, "Cue lead (quarter notes)");
-        lead_.setNumDecimalPlacesToDisplay(3);
+        lead_.textFromValueFunction = [](double value) { return juce::String(value, 3); };
+        lead_.updateText();
         addAndMakeVisible(queue_);
         queue_.onClick = [this] {
             owner_.queueCue();
