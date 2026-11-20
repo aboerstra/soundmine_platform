@@ -9,7 +9,15 @@
     @livewireStyles
 </head>
 <body class="tsm-page">
-    <x-brand.header />
+    <x-brand.header>
+        @auth
+            @if (! auth()->user()->is_admin)
+                <nav aria-label="Account navigation">
+                    <a href="{{ route('portal.account') }}">Account sign-in</a>
+                </nav>
+            @endif
+        @endauth
+    </x-brand.header>
     <main class="tsm-shell tsm-portal">{{ $slot }}</main>
     @livewireScripts
 </body>

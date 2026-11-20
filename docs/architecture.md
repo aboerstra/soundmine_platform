@@ -9,7 +9,7 @@ Use a modular monolith: one Laravel application and PostgreSQL database, with ex
 
 | Domain | Current records | Responsibility and future application actions |
 | --- | --- | --- |
-| Customers | Customer linked one-to-one to User; CustomerInvitation | Customer identity and ownership. User owns authentication; Customer owns commercial relationships. Organization memberships can be added separately. |
+| Customers | Customer linked one-to-one to User; CustomerInvitation; SocialIdentity | Customer identity and ownership. User owns authentication; Customer owns commercial relationships. Organization memberships can be added separately. |
 | Catalog | Product | Stable product slug and UUID, display metadata, availability. Pattern Conductor is a catalog entry, never a special case in license code. Add product releases and editions when requirements settle. |
 | Orders | Order, OrderItem | Commercial history, status, currency and integer minor-unit amounts. Items snapshot descriptions and prices. Future completion/refund actions coordinate license grants and revocations. No payment integration exists. |
 | Licensing | License, LicenseStatus, LicenseEvent | A customer's grant for one product, optional purchase provenance, validity interval and device allowance. A grant can exist without an order for future trials or manual grants. |
@@ -22,6 +22,7 @@ Use a modular monolith: one Laravel application and PostgreSQL database, with ex
 ```mermaid
 erDiagram
     User ||--o| Customer : authenticates
+    User ||--o{ SocialIdentity : links
     Customer ||--o{ Order : places
     Order ||--o{ OrderItem : contains
     Product ||--o{ OrderItem : describes
@@ -42,7 +43,7 @@ Put shared business use-case classes under `app/Domain/<Domain>/Actions`. Contro
 ## Implemented interfaces
 
 - `/admin`: Filament management of customers, invitations, products and licenses. Access requires `users.is_admin` and a verified email. The flag is excluded from mass assignment. There is no default administrator. Customer/product edits are limited; licenses are managed through the shared grant/status actions, with a dedicated history view and no raw editing/deletion.
-- Customer portal: invite-only account creation, session login/logout, verification, password recovery, license list, license details and installation authorization codes. Queries derive the Customer from the authenticated User and return 404 for other customers’ license IDs. Login and recovery are throttled; password resets invalidate existing protected sessions. Verification and session middleware persist on Livewire updates. Public self-registration and admin MFA are not implemented.
+- Customer portal: invite-only account creation, session login/logout, verification, password recovery, license list, license details and installation authorization codes. Queries derive the Customer from the authenticated User and return 404 for other customers’ license IDs. Login and recovery are throttled; password resets invalidate existing protected sessions. Verification and session middleware persist on Livewire updates. Optional Google sign-in uses explicitly linked identities or invitation acceptance with a matching verified email. Account sign-in settings require the current password to link/disconnect Google. Public self-registration and admin MFA are not implemented.
 - `GET /api/v1/status`: throttled, versioned service status; reports the online activation preview separately from unavailable signed/offline licensing.
 - `/up`: Laravel health route. It is an application liveness signal, not a full dependency readiness check.
 
@@ -51,6 +52,14 @@ Put shared business use-case classes under `app/Domain/<Domain>/Actions`. Contro
 - `DELETE /api/v1/products/{product:slug}/activations/{activation}`: release only that credential's installation.
 
 There are no entitlement mutation, order, checkout, signing or certificate endpoints. The [activation API contract](activation-api.md) documents the implemented protocol and its limits.
+
+## Customer identity boundary
+
+`SocialIdentity` belongs to User, not to a product or license. One linked Google account authenticates the existing customer across their independently scoped products; it does not change customer ownership, entitlements or installation credentials. Unique provider/subject and user/provider pairs prevent identity sharing and accidental replacement.
+
+`AuthenticateGoogleCustomer` owns linked-subject lookup, explicit linking, invitation provisioning and unlinking. It never auto-links by email, changes an existing user's email, or grants administrator privileges. New Google accounts still require a valid invitation and verified matching provider email. Account creation, Customer creation, identity insertion and invitation consumption commit together. Existing-user link/unlink and login checks use User row locks. Google authentication is refused for administrators, unverified local customers and users without a Customer record.
+
+The HTTP controller handles Socialite state/PKCE, CSRF-protected initiation, ten-minute single-use session intent and session rotation. Linking additionally binds the current user and password version after password confirmation. Provider credentials live only in environment configuration; access/refresh tokens are never persisted. Google is disabled until explicitly configured. See README for setup, recovery behavior and the remaining live-provider verification step.
 
 ## Persistence decisions
 
