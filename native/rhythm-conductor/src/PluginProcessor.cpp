@@ -1,7 +1,9 @@
 #include "CueScheduler.hpp"
 
+#include <PatternConductorAssets.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <array>
 #include <atomic>
 #include <cmath>
 
@@ -34,7 +36,7 @@ public:
     {
     }
 
-    const juce::String getName() const override { return "Rhythm Conductor"; }
+    const juce::String getName() const override { return JucePlugin_Name; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return true; }
     bool isMidiEffect() const override { return false; }
@@ -176,6 +178,48 @@ juce::String statusText(CueStatus status)
     return {};
 }
 
+const juce::Colour ink{0xff131417};
+const juce::Colour panel{0xff1c1d21};
+const juce::Colour rock{0xff34353b};
+const juce::Colour muted{0xffa3a3ab};
+const juce::Colour paper{0xfff4f1ea};
+const juce::Colour cyan{0xff35c4d4};
+const juce::Colour queuedGold{0xffe2b33c};
+
+class BrandLookAndFeel final : public juce::LookAndFeel_V4 {
+public:
+    BrandLookAndFeel()
+    {
+        setColour(juce::Label::textColourId, paper);
+        setColour(juce::Slider::backgroundColourId, rock);
+        setColour(juce::Slider::trackColourId, cyan);
+        setColour(juce::Slider::thumbColourId, cyan);
+        setColour(juce::Slider::textBoxBackgroundColourId, panel);
+        setColour(juce::Slider::textBoxTextColourId, paper);
+        setColour(juce::Slider::textBoxOutlineColourId, muted);
+        setColour(juce::TextEditor::focusedOutlineColourId, cyan);
+        setColour(juce::TextButton::buttonColourId, cyan);
+        setColour(juce::TextButton::textColourOffId, ink);
+    }
+
+    juce::Font text(float height) const { return juce::Font{juce::FontOptions{sans_}.withHeight(height)}; }
+
+    juce::Font getTextButtonFont(juce::TextButton&, int) override { return text(15.0f); }
+
+    juce::Label* createSliderTextBox(juce::Slider& slider) override
+    {
+        auto* label = LookAndFeel_V4::createSliderTextBox(slider);
+        label->setFont(juce::Font{juce::FontOptions{mono_}.withHeight(14.0f)});
+        return label;
+    }
+
+private:
+    const juce::Typeface::Ptr sans_ = juce::Typeface::createSystemTypefaceFor(
+        PatternConductorAssets::SpaceGroteskRegular_ttf, PatternConductorAssets::SpaceGroteskRegular_ttfSize);
+    const juce::Typeface::Ptr mono_ = juce::Typeface::createSystemTypefaceFor(
+        PatternConductorAssets::JetBrainsMonoMedium_ttf, PatternConductorAssets::JetBrainsMonoMedium_ttfSize);
+};
+
 class Editor final : public juce::AudioProcessorEditor, private juce::Timer {
 public:
     explicit Editor(Processor& owner)
@@ -184,6 +228,7 @@ public:
           programAttachment_(owner.parameters, programId, program_),
           leadAttachment_(owner.parameters, leadId, lead_)
     {
+        setLookAndFeel(&brand_);
         addSetting(channel_, channelLabel_, "MIDI channel");
         addSetting(program_, programLabel_, "MIDI program (1–128)");
         addSetting(lead_, leadLabel_, "Cue lead (quarter notes)");
@@ -193,20 +238,36 @@ public:
             owner_.queueCue();
             timerCallback();
         };
+        status_.setFont(brand_.text(15.0f));
         addAndMakeVisible(status_);
-        setSize(420, 198);
+        setSize(460, 252);
         timerCallback();
         startTimerHz(12);
     }
 
+    ~Editor() override { setLookAndFeel(nullptr); }
+
     void paint(juce::Graphics& graphics) override
     {
-        graphics.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
+        graphics.fillAll(ink);
+        graphics.drawImageWithin(lockup_, 14, 13, getWidth() - 28, 36,
+                                 juce::RectanglePlacement::xLeft | juce::RectanglePlacement::yMid);
+        graphics.setColour(rock);
+        graphics.drawHorizontalLine(58, 14.0f, static_cast<float>(getWidth() - 14));
+    }
+
+    void paintOverChildren(juce::Graphics& graphics) override
+    {
+        graphics.setColour(cyan);
+        for (const auto* control : std::array<const juce::Component*, 4>{&channel_, &program_, &lead_, &queue_})
+            if (control->hasKeyboardFocus(true))
+                graphics.drawRoundedRectangle(control->getBounds().expanded(2).toFloat(), 4.0f, 1.5f);
     }
 
     void resized() override
     {
         auto area = getLocalBounds().reduced(14);
+        area.removeFromTop(55);
         place(area.removeFromTop(34), channelLabel_, channel_);
         place(area.removeFromTop(34), programLabel_, program_);
         place(area.removeFromTop(34), leadLabel_, lead_);
@@ -219,7 +280,10 @@ private:
     void addSetting(juce::Slider& slider, juce::Label& label, const juce::String& text)
     {
         label.setText(text, juce::dontSendNotification);
+        label.setFont(brand_.text(15.0f));
         label.attachToComponent(&slider, true);
+        slider.setTitle(text);
+        slider.setWantsKeyboardFocus(true);
         slider.setSliderStyle(juce::Slider::LinearHorizontal);
         slider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 64, 22);
         addAndMakeVisible(slider);
@@ -234,11 +298,18 @@ private:
 
     void timerCallback() override
     {
-        status_.setText(owner_.hasUnreadCue() ? "Waiting for host processing" : statusText(owner_.status()),
+        const auto status = owner_.status();
+        const bool awaitingHost = owner_.hasUnreadCue();
+        status_.setColour(juce::Label::textColourId, !awaitingHost && status == CueStatus::scheduled ? queuedGold : muted);
+        status_.setText(awaitingHost ? "Waiting for host processing" : statusText(status),
                         juce::dontSendNotification);
     }
 
     Processor& owner_;
+    BrandLookAndFeel brand_;
+    const juce::Image lockup_ = juce::ImageFileFormat::loadFrom(
+        PatternConductorAssets::thesoundminepatternconductorlockupondark_png,
+        PatternConductorAssets::thesoundminepatternconductorlockupondark_pngSize);
     juce::Slider channel_, program_, lead_;
     juce::Label channelLabel_, programLabel_, leadLabel_, status_;
     juce::TextButton queue_{"Queue program"};

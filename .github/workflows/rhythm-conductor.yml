@@ -1,13 +1,15 @@
-name: Rhythm Conductor prototype
+name: Pattern Conductor prototype
 
 on:
   push:
     paths:
       - 'native/rhythm-conductor/**'
+      - 'public/brand/**'
       - '.github/workflows/rhythm-conductor.yml'
   pull_request:
     paths:
       - 'native/rhythm-conductor/**'
+      - 'public/brand/**'
       - '.github/workflows/rhythm-conductor.yml'
   workflow_dispatch:
 
@@ -34,4 +36,4 @@ jobs:
       - name: Test cue scheduling
         run: ctest --test-dir rhythm-build -C Release --output-on-failure
       - name: Verify the VST3 bundle was generated
-        run: test -d "rhythm-build/RhythmConductor_artefacts/Release/VST3/Rhythm Conductor.vst3"
+        run: test -d "rhythm-build/RhythmConductor_artefacts/Release/VST3/TheSoundMine Pattern Conductor.vst3"
