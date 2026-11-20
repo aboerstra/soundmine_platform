@@ -4,7 +4,9 @@ namespace App\Livewire\Portal;
 
 use App\Domain\Activations\Actions\IssueActivationAuthorization;
 use App\Domain\Activations\Exceptions\ActivationException;
+use App\Domain\Activations\Services\InstallationAccess;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -51,7 +53,17 @@ class LicenseDetails extends Component
         $this->authorizationExpiresAt = $result['expires_at'];
     }
 
-    public function render(): View
+    public function updatedMachineHash(): void
+    {
+        $this->reset('authorizationCode', 'authorizationExpiresAt');
+    }
+
+    public function updatedPlatform(): void
+    {
+        $this->reset('authorizationCode', 'authorizationExpiresAt');
+    }
+
+    public function render(InstallationAccess $access): View
     {
         // Resolve from the current customer on every render, including Livewire updates.
         $customer = auth()->user()->customer;
@@ -60,6 +72,15 @@ class LicenseDetails extends Component
 
         Gate::authorize('view', $license);
 
-        return view('livewire.portal.license-details', ['license' => $license])->layout('components.layouts.portal');
+        $license->loadCount(['activations as active_activations_count' => fn (Builder $query) => $query->where('status', 'active')]);
+        $unavailableReason = null;
+        try {
+            $access->assertLicenseUsable($license);
+        } catch (ActivationException $exception) {
+            $unavailableReason = $exception->getMessage();
+        }
+
+        return view('livewire.portal.license-details', ['license' => $license, 'unavailableReason' => $unavailableReason])
+            ->layout('components.layouts.portal', ['title' => $license->product->name.' license']);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Enums\ThemeMode;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -11,7 +13,6 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -27,10 +28,19 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandName('TheSoundMine')
+            ->brandLogo(fn () => asset('brand/thesoundmine-lockup-on-light.svg'))
+            ->darkModeBrandLogo(fn () => asset('brand/thesoundmine-lockup-on-dark.svg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(fn () => asset('brand/favicon.svg'))
+            ->font('Space Grotesk', url: fn () => asset('brand/fonts.css'), provider: LocalFontProvider::class)
+            ->monoFont('JetBrains Mono', provider: LocalFontProvider::class)
+            ->viteTheme('resources/css/filament-admin.css')
+            ->defaultThemeMode(ThemeMode::Dark)
             ->login()
             ->emailVerification()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#E2B33C'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -40,7 +50,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
-                FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

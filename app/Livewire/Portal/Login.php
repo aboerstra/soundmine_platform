@@ -37,6 +37,6 @@ class Login extends Component
 
     public function render(): View
     {
-        return view('livewire.portal.login')->layout('components.layouts.portal');
+        return view('livewire.portal.login')->layout('components.layouts.portal', ['title' => 'Sign in']);
     }
 }

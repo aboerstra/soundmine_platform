@@ -37,7 +37,7 @@ class DomainFoundationTest extends TestCase
         $item = OrderItem::create(['order_id' => $order->id, 'product_id' => $product->id, 'description' => $product->name, 'quantity' => 1, 'unit_price_minor' => 4900]);
         $license = $this->license($customer, $product, ['order_item_id' => $item->id]);
         $product->update(['name' => 'Renamed']);
-        $this->assertSame('Rhythm Conductor', $order->items->first()->description);
+        $this->assertSame('TheSoundMine Pattern Conductor', $order->items->first()->description);
         $this->assertSame(4900, $item->unit_price_minor);
         $this->assertTrue($license->orderItem->order->customer->is($customer));
     }

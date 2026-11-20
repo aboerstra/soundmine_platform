@@ -40,7 +40,7 @@ class AuthenticateGoogleCustomer
             $user = User::lockForUpdate()->findOrFail($user->id);
             $this->assertCustomer($user);
             if ($user->email !== $profile->email) {
-                throw ValidationException::withMessages(['google' => 'Choose the Google account with the same email as your Soundmine account.']);
+                throw ValidationException::withMessages(['google' => 'Choose the Google account with the same email as your TheSoundMine account.']);
             }
             $identity = SocialIdentity::where('provider', 'google')->where('provider_subject', $profile->subject)->first();
             $existing = $user->socialIdentities()->where('provider', 'google')->first();

@@ -4,7 +4,7 @@ This contract is implemented by Laravel and tested using HTTP, Livewire and inde
 
 ## Product and installation identity
 
-Each product has a stable UUID and unique slug. Routes use the slug (for example `rhythm-conductor`); responses also return its UUID. Display names can change. There is no global device quota: each license has its own `max_activations`, installations and entitlements. One customer can own several products or several licenses of one product. The authorization code selects one exact license; the plugin cannot choose another by supplying IDs.
+Each product has a stable UUID and unique slug. Routes use the slug (for example `rhythm-conductor`); responses also return its UUID. Display names can change. The canonical `rhythm-conductor` slug is retained for TheSoundMine Pattern Conductor after its display-name update. There is no global device quota: each license has its own `max_activations`, installations and entitlements. One customer can own several products or several licenses of one product. The authorization code selects one exact license; the plugin cannot choose another by supplying IDs.
 
 Client contract for `machine_hash`:
 
@@ -48,7 +48,7 @@ Body (JSON only):
 ```json
 {
   "data": {
-    "product": {"id": "<UUID>", "slug": "rhythm-conductor", "name": "Rhythm Conductor"},
+    "product": {"id": "<UUID>", "slug": "rhythm-conductor", "name": "TheSoundMine Pattern Conductor"},
     "license": {"id": "<UUID>", "status": "active", "starts_at": "2026-11-17T00:00:00+00:00", "expires_at": null, "max_activations": 2},
     "activation": {"id": "<UUID>", "status": "active", "platform": "macos"},
     "entitlements": {"edition": "full", "formats": ["vst3"]}

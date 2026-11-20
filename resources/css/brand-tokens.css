@@ -1,0 +1,33 @@
+:root {
+    --tsm-ink: #131417;
+    --tsm-panel: #1C1D21;
+    --tsm-rock: #34353B;
+    --tsm-muted: #A3A3AB;
+    --tsm-paper: #F4F1EA;
+    --tsm-gold: #E2B33C;
+    --tsm-gold-light: #B8860B;
+    --tsm-gold-text: #7A5800;
+    --tsm-state-off: #26272C;
+    --tsm-state-on: #5594E7;
+    --tsm-state-playhead: #F4F1EA;
+    --tsm-state-playing: #3FCB7E;
+    --tsm-state-recording: #F0524F;
+    --tsm-state-queued: #E2B33C;
+    --tsm-pattern-conductor: #35C4D4;
+    --tsm-pattern-conductor-tint: #A3D6DC;
+    --tsm-pattern-conductor-on-light: #14838F;
+    --tsm-harmonic-conductor: #AA78E2;
+    --tsm-harmonic-conductor-tint: #D0BAE8;
+    --tsm-harmonic-conductor-on-light: #6F39AC;
+    --tsm-studio: #E2B33C;
+    --tsm-studio-tint: #F7DE8E;
+    --tsm-studio-on-light: #B8860B;
+    --tsm-track-1: #EA5D53;
+    --tsm-track-2: #F08D42;
+    --tsm-track-3: #F0D342;
+    --tsm-track-4: #4DCB77;
+    --tsm-track-5: #35C4D4;
+    --tsm-track-6: #5594E7;
+    --tsm-track-7: #AA78E2;
+    --tsm-track-8: #E56CB0;
+}

@@ -1,6 +1,6 @@
-# Soundmine Platform
+# TheSoundMine Platform
 
-Commercial customer and licensing platform for Soundmine audio products. The first product is **Rhythm Conductor**, a JUCE VST3 plugin for macOS and Windows. The architecture supports multiple products from the start.
+Commercial customer and licensing platform for TheSoundMine audio products. The first product is **TheSoundMine Pattern Conductor**, a JUCE VST3 plugin for macOS and Windows. The architecture supports multiple products from the start.
 
 This is an **online activation preview**, with no payments, certificate issuance or production signing. No production credentials are included. Nothing has been deployed.
 
@@ -45,7 +45,7 @@ npm run build
 docker compose up -d app
 ```
 
-Open <http://localhost:8000>. `/portal` requires sign-in; `/admin` has its own Filament sign-in. There is no public self-registration or default user. Administrators invite customers through Filament. The product seed is idempotent and creates only the inactive Rhythm Conductor entry. No licenses, orders, keys or administrators are seeded. Manual license grants require an administrator after setup.
+Open <http://localhost:8000>. `/portal` requires sign-in; `/admin` has its own Filament sign-in. There is no public self-registration or default user. Administrators invite customers through Filament. The product seed is idempotent and creates only the inactive TheSoundMine Pattern Conductor entry. No licenses, orders, keys or administrators are seeded. Manual license grants require an administrator after setup.
 
 `.env` is ignored. The example PostgreSQL password is intentionally for local development only. The generated `APP_KEY` is a local Laravel encryption/session key; it is not an Ed25519 signing key. Keep all real secrets out of source control.
 
@@ -76,6 +76,25 @@ The new migration normalizes existing user emails and adds a case-insensitive un
 
 License history is append-only through the application's model and has no edit/delete UI. It is not a tamper-proof ledger against privileged database access. Invitation acceptance and license changes use PostgreSQL row locks; license updates and audit insertion commit or roll back together. Manual entitlement values are strings in this phase; the existing JSONB storage can still display older structured values. The status API reports online activation separately from signed licensing, which remains unavailable.
 
+## Brand and customer experience
+
+The portal and Filament administration use the supplied **TheSoundMine brand v1.1**: original outlined SVG lockups, product marks, ink/panel/paper/gold colours, Space Grotesk 400–700 and JetBrains Mono 500. The supplied source guide is preserved in `public/brand/BRAND.md`. Fonts are served locally, with their SIL Open Font License notices under `public/brand/fonts`; no font CDN is contacted at runtime. `resources/css/brand-tokens.css` preserves the guide's exact palette. Build both the portal and admin theme with `npm run build`.
+
+The first product's display name is now **TheSoundMine Pattern Conductor**. The data migration updates only the known historical `Rhythm Conductor` name and preserves its UUID, `rhythm-conductor` API slug, availability, licenses and order snapshots. That legacy slug is an identifier, not the displayed product name. Custom catalog names are not overwritten. Future catalog entries should use the guide's **TheSoundMine Harmonic Conductor** and **TheSoundMine Studio** names; their supplied assets are included without creating additional sellable products. Rollback restores the historical display name for the canonical legacy record; use a forward fix once customers depend on the new name.
+
+The UI review uses [NN/g's usability heuristics](https://www.nngroup.com/articles/ten-usability-heuristics/) and relevant [WCAG 2.2 guidance](https://www.w3.org/WAI/WCAG22/quickref/) as design references, not a certification. Changes address the observed problems:
+
+| Observed problem | Implemented response |
+| --- | --- |
+| Bare pages lacked consistent navigation and location | Shared branded shell, page titles, active navigation, license breadcrumbs, sign-out and recovery routes |
+| Errors and busy states were difficult to follow | Error summary receives focus; field errors are associated with inputs; submit buttons expose progress and prevent repeat submissions |
+| Long product lists were difficult to scan | Customer-scoped, case-insensitive product search, 12-license pagination, readable status labels and explanatory empty states |
+| Status alone hid expired or future grants | Expired / Not started labels, visible device usage and dates, unavailable authorization explanation from the shared domain checks |
+| Activation required interpreting technical steps and copying a long code | Inline instructions, selectable code, clipboard feedback with manual fallback; changing the installation binding clears stale code previews |
+| Mobile and keyboard navigation were undeveloped | Responsive layouts, visible focus, skip link, explicit labels, paste/autocomplete support and minimum 44–48px main controls |
+
+Verification includes PHPUnit/PostgreSQL regression tests and Chromium checks of keyboard navigation, focused errors, search, authorization/code copying, desktop/mobile reflow and admin branding. Contrast calculations for main portal text, muted text, links, buttons and errors exceed 4.5:1. These checks are bounded: a full independent accessibility audit, assistive-technology testing, broad browser coverage and usability sessions with real customers remain necessary before claiming WCAG conformance or validated usability.
+
 ## Google customer sign-in
 
 Laravel Socialite 5 adds optional Google sign-in to the invite-only customer portal. It is disabled by default. Password login and recovery continue to work. No Google application, credential or consent screen has been created by this change.
@@ -91,11 +110,11 @@ GOOGLE_REDIRECT_URI=
 
 Supply your own client ID, secret and complete registered callback URI. Keep them out of Git, browser code and chat. Run the new migration and refresh Laravel's configuration cache after configuration changes. All three values and the enabled flag are required; otherwise Google buttons are hidden and OAuth endpoints return 404. Missing configuration does not disable local password login. Disconnecting a stored link remains available even when Google is disabled.
 
-- **Existing customers:** sign in with a password, open **Account sign-in**, confirm the current password and connect the verified Google account matching the Soundmine email. A matching email never automatically links or logs into an existing account. Disconnecting also requires the current password.
+- **Existing customers:** sign in with a password, open **Account sign-in**, confirm the current password and connect the verified Google account matching the TheSoundMine email. A matching email never automatically links or logs into an existing account. Disconnecting also requires the current password.
 - **Invited customers:** open the invitation and choose **Accept invitation with Google**. Google must confirm the invitation's exact normalized email as verified. Invitation validity is checked again after returning from Google. Existing accounts/identities are never overwritten; expired, reissued or consumed invitations cannot create accounts.
-- **Returning customers:** use **Sign in with Google** after linking or accepting a Google invitation. The stable Google subject selects the existing User; subsequent Google email changes do not rewrite the Soundmine email or transfer licenses. Unlinked Google users cannot register through the login screen.
+- **Returning customers:** use **Sign in with Google** after linking or accepting a Google invitation. The stable Google subject selects the existing User; subsequent Google email changes do not rewrite the TheSoundMine email or transfer licenses. Unlinked Google users cannot register through the login screen.
 
-Google-created accounts are verified immediately and receive an unknown random password hash. To establish a password for recovery/disconnection, sign out and use the existing password recovery flow sent to the Soundmine email. Administrators cannot link or authenticate via these Google endpoints; Filament continues using its existing password authentication.
+Google-created accounts are verified immediately and receive an unknown random password hash. To establish a password for recovery/disconnection, sign out and use the existing password recovery flow sent to the TheSoundMine email. Administrators cannot link or authenticate via these Google endpoints; Filament continues using its existing password authentication.
 
 OAuth initiation uses CSRF-protected POST forms. Socialite checks session state and PKCE; the single-use login/link/invitation context expires after ten minutes and is bound to the initiating session (and user/password version when linking). Starting another flow replaces the previous one. Only `openid` and `email` scopes are requested. The database stores the provider and stable subject with unique `(provider, provider_subject)` and `(user_id, provider)` constraints, not Google tokens or profile photos. Invitation tokens in the temporary OAuth session are encrypted. Do not record OAuth query strings or provider responses in proxy/access logs; the application reports only exception classes for provider failures. Unlinking stops future Google sign-ins; existing browser sessions remain until sign-out, expiry or password reset.
 

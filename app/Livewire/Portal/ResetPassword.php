@@ -58,6 +58,6 @@ class ResetPassword extends Component
 
     public function render(): View
     {
-        return view('livewire.portal.reset-password')->layout('components.layouts.portal');
+        return view('livewire.portal.reset-password')->layout('components.layouts.portal', ['title' => 'Choose a new password']);
     }
 }
