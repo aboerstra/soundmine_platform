@@ -1,5 +1,5 @@
 <section>
-    <h1>Create your Soundmine account</h1>
+    <h1>Create your TheSoundMine account</h1>
     <p>Your invitation fixes your account name and email address. Choose a password of at least 12 characters.</p>
     @if (\App\Domain\Customers\Services\GoogleAuthentication::enabled())
         <form method="POST" action="{{ route('google.invitation', ['invitation' => $invitationId, 'token' => $token]) }}">

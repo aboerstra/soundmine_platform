@@ -1,5 +1,5 @@
 <section>
-    <h1>Sign in to Soundmine</h1>
+    <h1>Sign in to TheSoundMine</h1>
     @if (session('status')) <p role="status">{{ session('status') }}</p> @endif
     @error('google') <p role="alert">{{ $message }}</p> @enderror
     @if (\App\Domain\Customers\Services\GoogleAuthentication::enabled())

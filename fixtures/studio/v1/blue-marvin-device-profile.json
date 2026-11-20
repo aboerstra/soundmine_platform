@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "studio.device-profile",
+  "id": "behringer.2600-blue-marvin",
+  "manufacturer": "Behringer",
+  "model": "2600 Blue Marvin",
+  "ports": [
+    {
+      "id": "pitch-in",
+      "signal": "pitch-cv",
+      "direction": "input",
+      "evidence": "user-declared"
+    },
+    {
+      "id": "gate-in",
+      "signal": "gate",
+      "direction": "input",
+      "evidence": "user-declared"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "analog-synthesis",
+      "evidence": "user-declared"
+    }
+  ]
+}

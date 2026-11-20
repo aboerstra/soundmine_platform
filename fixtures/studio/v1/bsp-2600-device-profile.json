@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "studio.device-profile",
+  "id": "arturia.beatstep-pro",
+  "manufacturer": "Arturia",
+  "model": "BeatStep Pro",
+  "ports": [
+    {
+      "id": "seq1-pitch",
+      "signal": "pitch-cv",
+      "direction": "output",
+      "evidence": "user-declared"
+    },
+    {
+      "id": "seq1-gate",
+      "signal": "gate",
+      "direction": "output",
+      "evidence": "user-declared"
+    },
+    {
+      "id": "seq1-velocity",
+      "signal": "velocity-cv",
+      "direction": "output",
+      "evidence": "user-declared"
+    },
+    {
+      "id": "midi-out",
+      "signal": "midi",
+      "direction": "output",
+      "evidence": "user-declared"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "step-sequencing",
+      "evidence": "user-declared"
+    },
+    {
+      "id": "external-per-note-pitch-control",
+      "evidence": "unverified",
+      "notes": "Do not assume external per-step retuning while direct CV/Gate remains connected."
+    }
+  ]
+}

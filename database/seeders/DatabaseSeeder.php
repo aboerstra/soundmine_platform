@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         Product::firstOrCreate(['slug' => 'rhythm-conductor'], [
-            'name' => 'Rhythm Conductor',
+            'name' => 'TheSoundMine Pattern Conductor',
             'description' => 'JUCE-based VST3 audio plugin for macOS and Windows.',
             'is_active' => false,
         ]);

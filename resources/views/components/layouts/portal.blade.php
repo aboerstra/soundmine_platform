@@ -3,20 +3,22 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Soundmine Platform</title>
+    <title>TheSoundMine Customer Portal</title>
     <meta name="referrer" content="no-referrer">
-    <style>body{font-family:system-ui,sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem;line-height:1.5}label,input,button{display:block;margin:.5rem 0}input{padding:.4rem;max-width:100%}dt{font-weight:600}dd{margin-bottom:.75rem}</style>
+    <x-brand.assets />
     @livewireStyles
 </head>
-<body>
-    <header><a href="/">Soundmine</a>
+<body class="tsm-page">
+    <x-brand.header>
         @auth
             @if (! auth()->user()->is_admin)
-                <a href="{{ route('portal.account') }}">Account sign-in</a>
+                <nav aria-label="Account navigation">
+                    <a href="{{ route('portal.account') }}">Account sign-in</a>
+                </nav>
             @endif
         @endauth
-    </header>
-    <main>{{ $slot }}</main>
+    </x-brand.header>
+    <main class="tsm-shell tsm-portal">{{ $slot }}</main>
     @livewireScripts
 </body>
 </html>

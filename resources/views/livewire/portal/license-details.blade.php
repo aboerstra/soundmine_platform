@@ -16,7 +16,7 @@
         @endforelse
     </ul>
     <h2>Authorize an installation</h2>
-    <p>Paste the installation fingerprint from your Soundmine application. This authorizes only {{ $license->product->name }} under this license.</p>
+    <p>Paste the installation fingerprint from your TheSoundMine application. This authorizes only {{ $license->product->name }} under this license.</p>
     <form wire:submit="issueAuthorization">
         <label for="machineHash">Installation fingerprint (64 lowercase hexadecimal characters)</label>
         <input id="machineHash" wire:model="machineHash" type="text" minlength="64" maxlength="64" required autocomplete="off">

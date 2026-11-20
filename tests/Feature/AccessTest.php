@@ -18,8 +18,8 @@ class AccessTest extends TestCase
     {
         $this->get('/portal')->assertRedirect('/login');
         $this->get('/admin')->assertRedirect('/admin/login');
-        $this->get('/login')->assertOk();
-        $this->get('/admin/login')->assertOk();
+        $this->get('/login')->assertOk()->assertSee('TheSoundMine Customer Portal')->assertSee('brand/favicon.svg');
+        $this->get('/admin/login')->assertOk()->assertSee('thesoundmine-lockup-on-light.svg')->assertSee('brand/favicon.svg');
     }
 
     public function test_portal_displays_only_the_authenticated_customers_products(): void

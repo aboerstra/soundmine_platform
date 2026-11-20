@@ -1,6 +1,6 @@
-# Soundmine Platform
+# TheSoundMine Platform
 
-Commercial customer and licensing platform for Soundmine audio products. The first product is **Rhythm Conductor**, a JUCE VST3 plugin for macOS and Windows. The architecture supports multiple products from the start.
+Commercial customer and licensing platform for TheSoundMine audio products. The first product is **TheSoundMine Pattern Conductor**, a JUCE VST3 plugin for macOS and Windows. The architecture supports multiple products from the start. The brand website is [thesoundmine.com](https://thesoundmine.com). See the [brand kit](docs/brand.md) for naming and assets.
 
 This is an **online activation preview**, with no payments, certificate issuance or production signing. No production credentials are included. Nothing has been deployed.
 
@@ -45,7 +45,7 @@ npm run build
 docker compose up -d app
 ```
 
-Open <http://localhost:8000>. `/portal` requires sign-in; `/admin` has its own Filament sign-in. There is no public self-registration or default user. Administrators invite customers through Filament. The product seed is idempotent and creates only the inactive Rhythm Conductor entry. No licenses, orders, keys or administrators are seeded. Manual license grants require an administrator after setup.
+Open <http://localhost:8000>. `/portal` requires sign-in; `/admin` has its own Filament sign-in. There is no public self-registration or default user. Administrators invite customers through Filament. The product seed is idempotent and creates only the inactive Pattern Conductor entry. No licenses, orders, keys or administrators are seeded. Manual license grants require an administrator after setup.
 
 `.env` is ignored. The example PostgreSQL password is intentionally for local development only. The generated `APP_KEY` is a local Laravel encryption/session key; it is not an Ed25519 signing key. Keep all real secrets out of source control.
 
