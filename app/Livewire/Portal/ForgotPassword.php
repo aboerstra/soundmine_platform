@@ -30,6 +30,6 @@ class ForgotPassword extends Component
 
     public function render(): View
     {
-        return view('livewire.portal.forgot-password')->layout('components.layouts.portal');
+        return view('livewire.portal.forgot-password')->layout('components.layouts.portal', ['title' => 'Reset your password']);
     }
 }

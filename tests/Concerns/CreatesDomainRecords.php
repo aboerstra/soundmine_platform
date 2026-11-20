@@ -20,7 +20,7 @@ trait CreatesDomainRecords
         return Customer::create(['user_id' => ($user ?? User::factory()->create())->id, 'display_name' => 'Test customer']);
     }
 
-    protected function product(string $name = 'Rhythm Conductor'): Product
+    protected function product(string $name = 'TheSoundMine Pattern Conductor'): Product
     {
         return Product::create(['slug' => Str::slug($name).'-'.Str::random(6), 'name' => $name]);
     }

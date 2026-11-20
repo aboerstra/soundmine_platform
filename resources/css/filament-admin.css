@@ -1,0 +1,14 @@
+@import '../../vendor/filament/filament/resources/css/theme.css';
+@import './brand-tokens.css';
+@source '../../app/Filament/**/*';
+@source '../views/filament/**/*';
+
+.fi-body { background-color: var(--tsm-paper); }
+.dark .fi-body { background-color: var(--tsm-ink); }
+.dark .fi-sidebar, .dark .fi-topbar, .dark .fi-section, .dark .fi-ta, .dark .fi-simple-main { background-color: var(--tsm-panel); }
+.fi-logo { padding: .35rem; }
+.fi-btn.fi-color-primary { color: var(--tsm-ink); background-color: var(--tsm-gold); }
+:root:not(.dark) .fi-link.fi-color-primary { color: var(--tsm-gold-text); }
+.fi-btn:focus-visible, .fi-sidebar-item-btn:focus-visible { outline: 3px solid var(--tsm-gold-text); outline-offset: 3px; }
+.dark .fi-btn:focus-visible, .dark .fi-sidebar-item-btn:focus-visible { outline-color: var(--tsm-gold); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

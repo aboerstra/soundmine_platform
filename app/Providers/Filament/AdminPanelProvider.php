@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Enums\ThemeMode;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -28,15 +29,17 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
-            ->emailVerification()
             ->brandName('TheSoundMine')
             ->brandLogo(fn (): string => asset('brand/thesoundmine-lockup-on-light.svg'))
             ->darkModeBrandLogo(fn (): string => asset('brand/thesoundmine-lockup-on-dark.svg'))
-            ->brandLogoHeight('2rem')
+            ->brandLogoHeight('3rem')
             ->favicon(fn (): string => asset('brand/favicon.svg'))
-            ->font('Space Grotesk', url: fn (): string => asset('brand/fonts/fonts.css'), provider: LocalFontProvider::class)
+            ->font('Space Grotesk', url: fn (): string => asset('brand/fonts.css'), provider: LocalFontProvider::class)
             ->monoFont('JetBrains Mono', provider: LocalFontProvider::class)
+            ->viteTheme('resources/css/filament-admin.css')
+            ->defaultThemeMode(ThemeMode::Dark)
+            ->login()
+            ->emailVerification()
             ->colors([
                 'primary' => Color::hex('#E2B33C'),
             ])

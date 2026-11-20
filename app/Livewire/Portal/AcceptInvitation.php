@@ -17,6 +17,9 @@ class AcceptInvitation extends Component
     #[Locked]
     public string $token;
 
+    #[Locked]
+    public string $invitedEmail;
+
     public string $password = '';
 
     public string $password_confirmation = '';
@@ -27,6 +30,7 @@ class AcceptInvitation extends Component
         abort_unless($record?->accepts($token), 404);
         $this->invitationId = $record->id;
         $this->token = $token;
+        $this->invitedEmail = $record->email;
     }
 
     public function accept(AcceptCustomerInvitation $action): void
@@ -43,6 +47,6 @@ class AcceptInvitation extends Component
 
     public function render(): View
     {
-        return view('livewire.portal.accept-invitation')->layout('components.layouts.portal');
+        return view('livewire.portal.accept-invitation')->layout('components.layouts.portal', ['title' => 'Create your account']);
     }
 }
