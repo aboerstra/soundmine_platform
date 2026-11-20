@@ -48,7 +48,7 @@ Body (JSON only):
 ```json
 {
   "data": {
-    "product": {"id": "<UUID>", "slug": "rhythm-conductor", "name": "Rhythm Conductor"},
+    "product": {"id": "<UUID>", "slug": "rhythm-conductor", "name": "TheSoundMine Pattern Conductor"},
     "license": {"id": "<UUID>", "status": "active", "starts_at": "2026-11-17T00:00:00+00:00", "expires_at": null, "max_activations": 2},
     "activation": {"id": "<UUID>", "status": "active", "platform": "macos"},
     "entitlements": {"edition": "full", "formats": ["vst3"]}

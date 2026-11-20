@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Soundmine Platform'),
+    'name' => env('APP_NAME', 'TheSoundMine'),
 
     /*
     |--------------------------------------------------------------------------

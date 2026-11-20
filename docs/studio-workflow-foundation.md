@@ -1,4 +1,4 @@
-# Soundmine Studio and Workflow Foundation — Architecture Contract v0.1
+# TheSoundMine Studio and Workflow Foundation — Architecture Contract v0.1
 
 Status: draft Studio contracts and a portable native workflow core. The Studio persistence and local hardware integration described below are future work.
 
@@ -12,8 +12,8 @@ A workflow is a musical goal and its constraints; an execution plan is one valid
 
 - **Platform cloud (existing Laravel modular monolith):** user-owned studio inventories, verified and user-declared device capability profiles, saved workflow intents, versioned schemas, hosted MCP endpoints in a later milestone, and authenticated synchronization. Do not introduce MCP endpoints before authorization and privacy contracts are defined.
 - **Platform native shared library (C++):** deterministic schema parsing, typed graph validation, capability matching, plan diagnostics, and non-real-time configuration compilation. Keep this library independent of Laravel and product-specific musical rules.
-- **Harmonic Conductor:** chord detection, pitch adaptation, voice leading, and product UX.
-- **Rhythm Conductor:** Rytm pattern orchestration and Program Change scheduling. The JUCE plug-in is the Ableton Live product target. The existing Max for Live device is a behavior reference. Pattern orchestration is also a standalone product use case.
+- **TheSoundMine Harmonic Conductor:** chord detection, pitch adaptation, voice leading, and product UX.
+- **TheSoundMine Pattern Conductor:** Rytm pattern orchestration and Program Change scheduling. The JUCE plug-in is the Ableton Live product target. The existing Max for Live device is a behavior reference. Pattern orchestration is also a standalone product use case.
 
 A hosted service cannot discover physical CV cables or control local MIDI ports without an explicitly authorized local bridge. Real-time MIDI/CV performance must not depend on cloud availability.
 
@@ -56,7 +56,7 @@ Expected validation outcomes:
 
 ## Pattern orchestration in Ableton and standalone
 
-Rhythm Conductor has two ways to run:
+Pattern Conductor has two ways to run:
 
 - **Inside Ableton Live.** A JUCE plug-in hosted in the Live set follows Live's transport and schedules pattern changes. This mode runs entirely within Live. The plug-in's route to the hardware must be verified in Live before considering the workflow feasible.
 - **Standalone.** The desktop app runs the workflow in a studio without a DAW. It connects to the studio's MIDI devices, follows the selected clock, and schedules each pattern change. An optional mobile companion can request a scene change and display what the desktop has queued or activated. The desktop determines the launch boundary and continues managing playback if the mobile connection drops.
@@ -81,9 +81,9 @@ cmake --build /tmp/rhythm-build --config Release
 ctest --test-dir /tmp/rhythm-build -C Release --output-on-failure
 ```
 
-The bundle is under `RhythmConductor_artefacts/Release/VST3` in the build directory. Set `-DSOUNDMINE_BUILD_VST3=OFF` on a separate configure to run the scheduler tests without JUCE. The Rhythm Conductor GitHub Actions workflow builds development bundles for macOS and Windows.
+The `TheSoundMine Pattern Conductor.vst3` bundle is under `RhythmConductor_artefacts/Release/VST3` in the build directory. Set `-DSOUNDMINE_BUILD_VST3=OFF` on a separate configure to run the scheduler tests without JUCE. The Pattern Conductor GitHub Actions workflow builds development bundles for macOS and Windows.
 
-1. Load Rhythm Conductor on a Live MIDI track and configure a route from its MIDI output to the Analog Rytm. The instrument has a silent audio output bus. Check the MIDI route with a monitor on the hardware output.
+1. Load TheSoundMine Pattern Conductor on a Live MIDI track and configure a route from its MIDI output to the Analog Rytm. The instrument has a silent audio output bus. Check the MIDI route with a monitor on the hardware output.
 2. Put the Rytm in the desired sync and pattern receive mode. Select its MIDI channel and the program corresponding to the target on that device. The interface uses program numbers 1–128, with MIDI data bytes 0–127.
 3. Disable Live's loop, set the cue lead in quarter notes, start playback, and click **Queue program**. Confirm the outgoing Program Change, then confirm whether the Rytm actually switched on the intended pattern boundary. Compare the observed lead and switching behavior with the Max for Live reference.
 4. If the outgoing message is missing, record the Live version, platform, MIDI route and plug-in settings. A separate test can evaluate direct MIDI output while the plug-in follows Live transport.

@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -29,8 +30,15 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->emailVerification()
+            ->brandName('TheSoundMine')
+            ->brandLogo(fn (): string => asset('brand/thesoundmine-lockup-on-light.svg'))
+            ->darkModeBrandLogo(fn (): string => asset('brand/thesoundmine-lockup-on-dark.svg'))
+            ->brandLogoHeight('2rem')
+            ->favicon(fn (): string => asset('brand/favicon.svg'))
+            ->font('Space Grotesk', url: fn (): string => asset('brand/fonts/fonts.css'), provider: LocalFontProvider::class)
+            ->monoFont('JetBrains Mono', provider: LocalFontProvider::class)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#E2B33C'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
