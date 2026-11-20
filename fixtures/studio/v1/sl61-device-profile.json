@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "studio.device-profile",
+  "id": "novation.sl61-mkiii",
+  "manufacturer": "Novation",
+  "model": "SL61 MkIII",
+  "ports": [
+    {
+      "id": "midi-out",
+      "signal": "midi",
+      "direction": "output",
+      "evidence": "user-declared"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "polyphonic-chord-input",
+      "evidence": "user-declared"
+    }
+  ]
+}

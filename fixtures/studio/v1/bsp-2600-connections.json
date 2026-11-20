@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "studio.connections",
+  "devices": [
+    {
+      "id": "bsp",
+      "profileId": "arturia.beatstep-pro"
+    },
+    {
+      "id": "marvin",
+      "profileId": "behringer.2600-blue-marvin"
+    },
+    {
+      "id": "sl61",
+      "profileId": "novation.sl61-mkiii"
+    }
+  ],
+  "connections": [
+    {
+      "id": "pitch-direct",
+      "from": {
+        "deviceId": "bsp",
+        "portId": "seq1-pitch"
+      },
+      "to": {
+        "deviceId": "marvin",
+        "portId": "pitch-in"
+      },
+      "signal": "pitch-cv",
+      "confirmation": "declared"
+    },
+    {
+      "id": "gate-direct",
+      "from": {
+        "deviceId": "bsp",
+        "portId": "seq1-gate"
+      },
+      "to": {
+        "deviceId": "marvin",
+        "portId": "gate-in"
+      },
+      "signal": "gate",
+      "confirmation": "declared"
+    }
+  ]
+}

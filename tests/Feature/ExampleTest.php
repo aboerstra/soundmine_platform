@@ -14,6 +14,10 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertOk()
+            ->assertSee('TheSoundMine Pattern Conductor')
+            ->assertSee('TheSoundMine Harmonic Conductor')
+            ->assertSee('TheSoundMine Studio')
+            ->assertSee('brand/favicon.svg');
     }
 }

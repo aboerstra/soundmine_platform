@@ -1,5 +1,5 @@
 <section>
-    <h1>Your Soundmine products</h1>
+    <h1>Your TheSoundMine products</h1>
     <p>Online activation authorization is available from each license detail page. Signed certificates and offline authorization are not available yet.</p>
     <ul>
         @forelse ($licenses as $license)

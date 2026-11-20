@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "workflow.intent",
+  "id": "adaptive-analog-bass",
+  "name": "Adaptive Analog Bass",
+  "roles": {
+    "harmonySource": "sl61",
+    "patternSource": "bsp",
+    "soundGenerator": "marvin"
+  },
+  "goals": [
+    "Adapt individual bass notes to changing chords while preserving native BSP sequencing"
+  ],
+  "constraints": {
+    "preserveDirectCvGate": true,
+    "preserveHardwareVelocityCv": true,
+    "allowAdditionalHardware": false,
+    "requirePerNoteHarmonicAdaptation": true
+  }
+}

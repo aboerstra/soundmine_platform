@@ -1,0 +1,144 @@
+@import url('fonts/fonts.css');
+
+:root {
+    --tsm-ink: #131417;
+    --tsm-panel: #1C1D21;
+    --tsm-rock: #34353B;
+    --tsm-muted: #A3A3AB;
+    --tsm-paper: #F4F1EA;
+    --tsm-gold: #E2B33C;
+    --tsm-gold-light: #B8860B;
+    --tsm-gold-text: #7A5800;
+    --tsm-pattern-conductor: #35C4D4;
+    --tsm-harmonic-conductor: #AA78E2;
+    --tsm-studio: #E2B33C;
+}
+
+.tsm-page {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--tsm-ink);
+    color: var(--tsm-paper);
+    color-scheme: dark;
+    font: 400 1rem/1.6 'Space Grotesk', system-ui, sans-serif;
+}
+
+.tsm-shell {
+    width: min(70rem, calc(100% - 2rem));
+    margin-inline: auto;
+}
+
+.tsm-header {
+    border-bottom: 1px solid var(--tsm-rock);
+}
+
+.tsm-header .tsm-shell {
+    padding-block: 1.1rem;
+}
+
+.tsm-logo {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.tsm-logo img {
+    display: block;
+    width: 14rem;
+    max-width: 100%;
+    height: auto;
+}
+
+.tsm-page h1, .tsm-page h2 {
+    line-height: 1.16;
+    font-weight: 700;
+}
+
+.tsm-page a {
+    color: var(--tsm-gold);
+    text-underline-offset: .18em;
+    overflow-wrap: anywhere;
+}
+
+.tsm-page :focus-visible {
+    outline: 2px solid var(--tsm-gold);
+    outline-offset: 4px;
+}
+
+.tsm-home {
+    padding-block: clamp(2.5rem, 8vw, 6rem) 4rem;
+}
+
+.tsm-hero h1 {
+    max-width: 15ch;
+    margin: 0 0 1rem;
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    letter-spacing: -.045em;
+}
+
+.tsm-hero p {
+    max-width: 54ch;
+}
+
+.tsm-page .tsm-action {
+    display: inline-block;
+    padding: .62rem 1rem;
+    border: 1px solid var(--tsm-gold);
+    border-radius: .35rem;
+    background: var(--tsm-gold);
+    color: var(--tsm-ink);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.tsm-product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+    gap: 1rem;
+    margin-top: 2.5rem;
+}
+
+.tsm-product {
+    padding: 1.25rem;
+    border: 1px solid var(--tsm-rock);
+    border-top-color: var(--tsm-product-accent);
+    border-radius: .5rem;
+    background: var(--tsm-panel);
+}
+
+.tsm-product--pattern { --tsm-product-accent: var(--tsm-pattern-conductor); }
+.tsm-product--harmonic { --tsm-product-accent: var(--tsm-harmonic-conductor); }
+.tsm-product--studio { --tsm-product-accent: var(--tsm-studio); }
+
+.tsm-product h2, .tsm-product p { margin: 0; }
+.tsm-product p, .tsm-availability { color: var(--tsm-muted); }
+.tsm-product img {
+    display: block;
+    width: 100%;
+    height: 2.75rem;
+    margin-bottom: .8rem;
+    object-fit: contain;
+    object-position: left center;
+}
+.tsm-availability { margin-top: 1.75rem; }
+
+.tsm-portal { max-width: 60rem; padding-block: 1.5rem 3rem; }
+.tsm-portal label, .tsm-portal input, .tsm-portal button { display: block; margin: .5rem 0; }
+.tsm-portal input[type='checkbox'] { display: inline-block; accent-color: var(--tsm-gold); }
+.tsm-portal input, .tsm-portal button {
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: .45rem .65rem;
+    border: 1px solid var(--tsm-muted);
+    border-radius: .3rem;
+    background: var(--tsm-panel);
+    color: var(--tsm-paper);
+    font: inherit;
+}
+.tsm-portal button { cursor: pointer; }
+.tsm-portal code, .tsm-portal input[inputmode='numeric'] {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+.tsm-portal dt { font-weight: 700; }
+.tsm-portal dd { margin: 0 0 .75rem; }

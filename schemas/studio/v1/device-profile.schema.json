@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.soundmine.com/studio/v1/device-profile.schema.json",
+  "title": "Soundmine device profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "id",
+    "manufacturer",
+    "model",
+    "ports",
+    "capabilities"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "kind": {
+      "const": "studio.device-profile"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "manufacturer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "firmware": {
+      "type": "string"
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "signal",
+          "direction",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "signal": {
+            "enum": [
+              "midi",
+              "usb-midi",
+              "pitch-cv",
+              "gate",
+              "velocity-cv",
+              "clock",
+              "audio"
+            ]
+          },
+          "direction": {
+            "enum": [
+              "input",
+              "output",
+              "bidirectional"
+            ]
+          },
+          "evidence": {
+            "enum": [
+              "verified",
+              "manufacturer-documented",
+              "user-declared",
+              "unverified"
+            ]
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "enum": [
+              "verified",
+              "manufacturer-documented",
+              "user-declared",
+              "unverified"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

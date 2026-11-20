@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Domain\Activations\Enums\ActivationStatus;
 use App\Domain\Activations\Models\Activation;
 use App\Domain\Activations\Models\ActivationAuthorization;
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Orders\Models\Order;
+use App\Domain\Orders\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -309,12 +312,32 @@ class ActivationApiTest extends TestCase
         $this->assertDatabaseCount('activations', 0);
     }
 
-    public function test_display_name_changes_do_not_break_product_identity_or_client_tokens(): void
+    public function test_pattern_conductor_rebrand_preserves_activation_and_order_history(): void
     {
-        $license = $this->activationLicense();
+        $product = Product::create(['slug' => 'rhythm-conductor', 'name' => 'Rhythm Conductor']);
+        $other = $this->product('Rhythm Conductor');
+        $license = $this->activationLicense(product: $product);
+        $order = Order::create(['customer_id' => $license->customer_id, 'currency' => 'EUR', 'total_minor' => 4900]);
+        $item = OrderItem::create(['order_id' => $order->id, 'product_id' => $product->id, 'description' => $product->name, 'quantity' => 1, 'unit_price_minor' => 4900]);
         $response = $this->activate($license, str_repeat('a', 64))->assertCreated();
-        $license->product->update(['name' => 'Updated display name']);
 
-        $this->withToken($response->json('installation_token'))->getJson($this->entitlementsUrl($license))->assertOk()->assertJsonPath('data.product.name', 'Updated display name')->assertJsonPath('data.product.id', $license->product_id);
+        $migration = require database_path('migrations/2026_11_20_004200_rename_rhythm_conductor_display_name.php');
+        $migration->up();
+
+        $this->withToken($response->json('installation_token'))->getJson('/api/v1/products/rhythm-conductor/entitlements')
+            ->assertOk()->assertJsonPath('data.product.name', 'TheSoundMine Pattern Conductor')
+            ->assertJsonPath('data.product.id', $product->id)->assertJsonPath('data.product.slug', 'rhythm-conductor');
+        $this->assertSame('Rhythm Conductor', $item->fresh()->description);
+        $this->assertSame('Rhythm Conductor', $other->fresh()->name);
+    }
+
+    public function test_pattern_conductor_rebrand_preserves_a_custom_catalog_name(): void
+    {
+        $product = Product::create(['slug' => 'rhythm-conductor', 'name' => 'Custom catalog name']);
+        $migration = require database_path('migrations/2026_11_20_004200_rename_rhythm_conductor_display_name.php');
+
+        $migration->up();
+
+        $this->assertSame('Custom catalog name', $product->fresh()->name);
     }
 }
